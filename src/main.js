@@ -100,55 +100,130 @@ function nav() {
 async function load() {
   if (!sb || !state.session) return;
   const uid = state.session.user.id;
-  const queries = await Promise.all([
+  const [
+    profileResult,
+    qualificationsResult,
+    aircraftResult,
+    missionsResult,
+    activeResult,
+    historyResult,
+  ] = await Promise.all([
     sb.from("pilot_profiles").select("*").eq("id", uid).maybeSingle(),
-    sb
-      .from("pilot_qualifications")
-      .select("*, qualifications(*)")
-      .eq("pilot_id", uid),
-    sb
-      .from("pilot_aircraft")
-      .select("*, aircraft_master(*)")
-      .eq("pilot_id", uid),
-    sb
-      .from("missions")
-      .select(
-        "*, aircraft_master(*), required_qualification:qualifications(*)",
-      ),
-    sb
-      .from("active_missions")
-      .select(
-        "*, missions(*, aircraft_master(*), required_qualification:qualifications(*))",
-      )
-      .eq("pilot_id", uid)
-      .maybeSingle(),
+    sb.from("pilot_qualifications").select("*").eq("pilot_id", uid),
+    sb.from("pilot_aircraft").select("*").eq("pilot_id", uid),
+    sb.from("missions").select("*"),
+    sb.from("active_missions").select("*").eq("pilot_id", uid).maybeSingle(),
     sb
       .from("flight_reports")
-      .select("*, missions(*), aircraft_master(*)")
+      .select("*")
       .eq("pilot_id", uid)
       .order("created_at", { ascending: false })
       .limit(30),
   ]);
-  const bad = queries.find((x) => x.error);
-  if (bad) {
-    err(bad.error, "Could not load your career.");
-    return;
+
+  const qualifications = qualificationsResult.data || [];
+  const aircraft = aircraftResult.data || [];
+  const missions = missionsResult.data || [];
+  const history = historyResult.data || [];
+  const qualificationIds = [
+    ...new Set(
+      [
+        ...qualifications.map((row) => row.qualification_id),
+        ...missions.map(
+          (mission) =>
+            mission.required_qualification_id || mission.qualification_id,
+        ),
+      ].filter(Boolean),
+    ),
+  ];
+  const aircraftIds = [
+    ...new Set(
+      [
+        ...aircraft.map((row) => row.aircraft_id),
+        ...missions.map(
+          (mission) => mission.required_aircraft_id || mission.aircraft_id,
+        ),
+        ...history.map((report) => report.aircraft_id),
+      ].filter(Boolean),
+    ),
+  ];
+  const [qualificationMasterResult, aircraftMasterResult] = await Promise.all([
+    qualificationIds.length
+      ? sb.from("qualifications").select("*").in("id", qualificationIds)
+      : Promise.resolve({ data: [], error: null }),
+    aircraftIds.length
+      ? sb.from("aircraft_master").select("*").in("id", aircraftIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const errors = [
+    profileResult,
+    qualificationsResult,
+    aircraftResult,
+    missionsResult,
+    activeResult,
+    historyResult,
+    qualificationMasterResult,
+    aircraftMasterResult,
+  ].filter((result) => result.error);
+  if (errors.length) {
+    err(errors[0].error, "Some career data could not be loaded.");
   }
-  [
-    state.profile,
-    state.qualifications,
-    state.aircraft,
-    state.missions,
-    state.active,
-    state.history,
-  ] = queries.map(
-    (x) => x.data || (x === queries[0] || x === queries[4] ? null : []),
+
+  const qualificationsById = new Map(
+    (qualificationMasterResult.data || []).map((row) => [row.id, row]),
   );
-  if (!state.profile)
+  const aircraftById = new Map(
+    (aircraftMasterResult.data || []).map((row) => [row.id, row]),
+  );
+  const missionsById = new Map(
+    missions.map((mission) => [mission.id, mission]),
+  );
+  const withMissionRelations = (mission) =>
+    mission
+      ? {
+          ...mission,
+          aircraft_master:
+            aircraftById.get(
+              mission.required_aircraft_id || mission.aircraft_id,
+            ) || null,
+          required_qualification:
+            qualificationsById.get(
+              mission.required_qualification_id || mission.qualification_id,
+            ) || null,
+        }
+      : null;
+
+  state.profile = profileResult.data || null;
+  state.qualifications = qualifications.map((row) => ({
+    ...row,
+    qualifications: qualificationsById.get(row.qualification_id) || null,
+  }));
+  state.aircraft = aircraft.map((row) => ({
+    ...row,
+    aircraft_master: aircraftById.get(row.aircraft_id) || null,
+  }));
+  state.missions = missions.map(withMissionRelations);
+  state.active = activeResult.data
+    ? {
+        ...activeResult.data,
+        missions: withMissionRelations(
+          missionsById.get(activeResult.data.mission_id),
+        ),
+      }
+    : null;
+  state.history = history.map((report) => ({
+    ...report,
+    missions: withMissionRelations(missionsById.get(report.mission_id)),
+    aircraft_master: aircraftById.get(report.aircraft_id) || null,
+  }));
+
+  if (!state.profile) {
     toast(
       "Your pilot profile is still being created. Reload in a moment.",
       true,
     );
+  }
 }
 function qIds() {
   return new Set(
