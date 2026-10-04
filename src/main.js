@@ -37,6 +37,7 @@ const state = {
   loading: false,
   loadErrors: [],
   submitting: false,
+  wb: { pilot: "", fuel: "" },
   report: {
     outcome: "successful",
     landing: "good",
@@ -46,6 +47,13 @@ const state = {
     weather: "clear",
   },
 };
+function updateWeightPlan(field, value) {
+  state.wb[field] = value;
+  const payload = missionPayload(state.selected || state.active?.missions || state.active);
+  const total = payload.total + Number(state.wb.pilot || 0) + Number(state.wb.fuel || 0);
+  const el = $("#wb-total");
+  if (el) el.textContent = `${num(total)} lb`;
+}
 function toast(message, bad = false) {
   const t = $("#toast");
   t.textContent = message;
@@ -124,7 +132,20 @@ function missionPayload(m) {
 function missionPayloadCard(m) {
   const p = missionPayload(m);
   if (!p.items.length) return "";
-  return `<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Payload • Weight & Balance</div><h2>Mission Manifest</h2></div><div class="ops-route-chip">PLANNING WEIGHT</div></div><p class="small">FlightOps planning manifest. Verify actual loading and aircraft weight & balance limits in MSFS before departure.</p><div class="details">${p.items.map((x) => `<div class="detail"><div class="label">${esc(x.description || x.type)}</div><strong>${num(x.count || 1)} × ${num(x.weight_lb || 0)} lb</strong><div class="small">Item total: ${num((x.count || 1) * (x.weight_lb || 0))} lb</div></div>`).join("")}<div class="detail"><div class="label">Mission payload total</div><strong>${num(p.total)} lb</strong><div class="small">Excludes pilot, fuel and aircraft empty weight.</div></div></div></div>`;
+  const pilot = Number(state.wb?.pilot || 0);
+  const fuel = Number(state.wb?.fuel || 0);
+  const planningLoad = p.total + pilot + fuel;
+  return `<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Payload • Weight & Balance</div><h2>Mission Load Planning</h2></div><div class="ops-route-chip">PLANNING WEIGHT</div></div>
+    <p class="small">Use the mission manifest as your starting load. Enter your actual pilot and planned fuel weights from MSFS to build a simple planning load.</p>
+    <div class="details">${p.items.map((x) => `<div class="detail"><div class="label">${esc(x.description || x.type)}</div><strong>${num(x.count || 1)} × ${num(x.weight_lb || 0)} lb</strong><div class="small">Item total: ${num((x.count || 1) * (x.weight_lb || 0))} lb</div></div>`).join("")}
+      <div class="detail"><div class="label">Mission payload</div><strong>${num(p.total)} lb</strong><div class="small">FlightOps planning manifest</div></div>
+      <label class="detail"><span class="label">Pilot weight</span><input id="wb-pilot" type="number" min="0" step="1" inputmode="numeric" value="${esc(state.wb?.pilot || "")}" placeholder="lb"></label>
+      <label class="detail"><span class="label">Planned fuel</span><input id="wb-fuel" type="number" min="0" step="1" inputmode="numeric" value="${esc(state.wb?.fuel || "")}" placeholder="lb"></label>
+      <div class="detail"><div class="label">Planning load</div><strong id="wb-total">${num(planningLoad)} lb</strong><div class="small">Payload + pilot + planned fuel. Aircraft empty weight is not included.</div></div>
+    </div>
+    <div class="callout"><b>MSFS verification:</b> enter the actual load distribution, fuel and pilot/passenger weights in the aircraft's Weight & Balance page. Confirm takeoff weight and CG are within published limits.</div>
+    <p class="small">FlightOps does not estimate aircraft empty weight, fuel burn or CG. The simulator's aircraft-specific model is authoritative.</p>
+  </div>`;
 }
 function missionTypeContext(m) {
   const type = String(m.mission_type || "").toUpperCase();
@@ -664,7 +685,8 @@ function report() {
       <label class="detail"><span class="label">Distance flown</span><input id="distance-nm" type="number" min="0" step="1" inputmode="numeric" placeholder="NM"></label>
       <p class="small">Enter the actual time and distance shown by your MSFS flight, not the mission estimate.</p>
     </div>
-     + "missionPayloadCard(m)" + 
+     ${missionPayloadCard(m)}
+
     <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">03 • Mission Objective</div><h2>Was the objective completed?</h2></div><div class="ops-route-chip">MISSION STANDARD</div></div>
       <div class="callout"><b>Assigned objective:</b><br>${esc(legObj)}<br><span class="small">This result directly affects mission pay, XP, reputation and whether the mission advances.</span></div>
       ${choice("objective",[["completed","Completed"],["partial","Partial"],["not_completed","Not Completed"]])}
@@ -731,6 +753,8 @@ function bind() {
           render();
         }),
     );
+  $("#wb-pilot")?.addEventListener("input", (e) => updateWeightPlan("pilot", e.target.value));
+  $("#wb-fuel")?.addEventListener("input", (e) => updateWeightPlan("fuel", e.target.value));
   $("#app")
     .querySelectorAll("[data-choice]")
     .forEach(
