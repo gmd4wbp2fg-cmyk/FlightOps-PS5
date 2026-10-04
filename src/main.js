@@ -660,8 +660,8 @@ function report() {
       <div class="label">Weather encountered</div>${choice("weather",[["clear","Clear / VMC"],["overcast","Overcast"],["wind","Strong Winds"],["rain","Rain"],["low_visibility","Low Visibility"],["imc","IMC"],["turbulence","Turbulence"],["storms","Storms"]])}
     </div>
     <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">02 • Flight Record</div><h2>Log the actual flight</h2></div><div class="ops-icon">✈</div></div>
-      <label class="detail"><span class="label">Flight time</span><input id="flight-minutes" type="number" min="0" step="1" inputmode="numeric" placeholder="Minutes"></label>
-      <label class="detail"><span class="label">Distance flown</span><input id="distance-nm" type="number" min="0" step="1" inputmode="numeric" placeholder="NM"></label>
+      <div class="detail"><div class="label">Flight Time</div><input id="flight-minutes" type="number" min="0" step="1" inputmode="numeric" placeholder="Minutes" aria-label="Flight time in minutes"></div>
+      <div class="detail"><div class="label">Distance Flown</div><input id="distance-nm" type="number" min="0" step="1" inputmode="numeric" placeholder="NM" aria-label="Distance flown in nautical miles"></div>
       <p class="small">Enter the actual time and distance shown by your MSFS flight, not the mission estimate.</p>
     </div>
      ${missionPayloadCard(m)}
