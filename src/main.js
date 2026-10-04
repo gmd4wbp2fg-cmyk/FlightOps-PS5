@@ -148,11 +148,20 @@ function aircraftName(a) {
     "Assigned aircraft"
   );
 }
+function missionLegs(m) {
+  const raw = m?.legs;
+  if (Array.isArray(raw) && raw.length) return raw;
+  return [{ leg_number: 1, origin_icao: m?.origin_icao || "—", destination_icao: m?.destination_icao || "—", distance_nm: Number(m?.distance_nm || m?.distance || 0) }];
+}
 function route(m) {
-  return (
-    m.route ||
-    `${m.origin_icao || m.departure_icao || m.departure_airport?.icao_code || "—"} → ${m.destination_icao || m.destination_airport?.icao_code || "—"}`
-  );
+  const legs = missionLegs(m);
+  if (legs.length > 1) return legs.map((leg) => `${leg.origin_icao || "—"} → ${leg.destination_icao || "—"}`).join(" → ");
+  return m.route || `${m.origin_icao || m.departure_icao || m.departure_airport?.icao_code || "—"} → ${m.destination_icao || m.destination_airport?.icao_code || "—"}`;
+}
+function legDisplay(m, currentLeg = 1) {
+  const legs = missionLegs(m);
+  const leg = legs[Math.max(0, Number(currentLeg || 1) - 1)] || legs[0];
+  return { legs, leg, current: Number(currentLeg || 1), count: legs.length };
 }
 function nav() {
   $("#nav").innerHTML = state.session
@@ -432,12 +441,12 @@ function activeView() {
       <div class="detail"><div class="label">Distance</div><strong>${esc(m.distance_nm || m.distance || "—")} NM</strong></div>
       <div class="detail"><div class="label">Base XP</div><strong>+${num(m.reward_xp || m.xp)} XP</strong></div>
     </div>
-    <div class="eyebrow">Flight Operations</div><div class="callout"><b>Objective:</b> ${esc(m.objective || m.mission_objective || "Complete the assigned route safely.")}<br><b>Planning:</b> ${esc(m.planning_level || "Pilot responsibility")}<br><b>Status:</b> ACTIVE — this contract is locked to your pilot.</div>
+    <div class="eyebrow">Flight Operations</div><div class="callout"><b>Objective:</b> ${esc(m.objective || m.mission_objective || "Complete the assigned route safely.")}<br><b>Planning:</b> ${esc(m.planning_level || "Pilot responsibility")}<br><b>Leg:</b> ${legDisplay(m, state.active?.current_leg).current} of ${legDisplay(m, state.active?.current_leg).count}<br><b>Current leg:</b> ${esc(legDisplay(m, state.active?.current_leg).leg.origin_icao)} → ${esc(legDisplay(m, state.active?.current_leg).leg.destination_icao)} (${num(legDisplay(m, state.active?.current_leg).leg.distance_nm)} NM)<br><b>Status:</b> ACTIVE — this contract is locked to your pilot.</div>
     <p class="copy">Launch MSFS 2024 Free Flight and fly the mission using <b>Live Weather</b>. FlightOps does not control the simulator or collect automatic telemetry. When you land, return here and complete the debrief.</p>
-    <button class="action primary" data-action="report">Complete Mission / Debrief</button>
+    <button class="action primary" data-action="report">${legDisplay(m, state.active?.current_leg).count > 1 ? `Complete Leg ${legDisplay(m, state.active?.current_leg).current} / Debrief` : "Complete Mission / Debrief"}</button>
     </div>
     <div class="card s4"><div class="eyebrow">Pilot Checklist</div><h2>Before Pushback</h2><p class="copy">✓ Aircraft selected<br>✓ Route reviewed<br>✓ <b>MSFS Live Weather enabled</b><br>✓ Fuel and alternate considered<br>✓ Mission objective understood<br>✓ Fly within aircraft limitations</p><div class="eyebrow">Reward</div><h2>${num(m.reward_credits || m.credits)} Cr</h2><p class="small">Base XP +${num(m.reward_xp || m.xp)} XP. Final rewards are calculated after the debrief.</p></div>
-    <div class="card s12"><div class="eyebrow">Mission Flow</div><h2>Accept → Fly → Land → Debrief → Get Paid</h2><p class="copy">This mission remains active if you close Safari or leave FlightOps. You can return later and continue the career.</p></div>
+    <div class="card s12"><div class="eyebrow">Mission Flow</div><h2>Accept → Fly → Land → Debrief → Next Leg → Get Paid</h2><p class="copy">This mission remains active if you close Safari or leave FlightOps. You can return later and continue the career.</p></div>
   </div>`;
 }
 function home() {
@@ -563,7 +572,7 @@ function report() {
   }
   const choice = (field, values) =>
     `<div class="fleet">${values.map(([v, l]) => `<button class="plane choice ${state.report[field] === v ? "selected" : ""}" data-choice="${field}" data-value="${v}"><b>${l}</b></button>`).join("")}</div>`;
-  return `<section class="hero"><div><div class="eyebrow">Flight Debrief</div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><h1>${esc(missionTitle(m))}</h1><p>${esc(route(m))} • Tell FlightOps what happened.</p></div>${epaulet()}</div></div></section><div class="card"><h3>Outcome</h3>${choice(
+  return `<section class="hero"><div><div class="eyebrow">Flight Debrief</div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><h1>${esc(missionTitle(m))}</h1><p>${esc(route(m))} • ${legDisplay(m, state.active?.current_leg).count > 1 ? `Leg ${legDisplay(m, state.active?.current_leg).current} of ${legDisplay(m, state.active?.current_leg).count} • ` : ""}${esc(legDisplay(m, state.active?.current_leg).leg.origin_icao)} → ${esc(legDisplay(m, state.active?.current_leg).leg.destination_icao)} • Tell FlightOps what happened.</p></div>${epaulet()}</div></div></section><div class="card"><h3>Outcome</h3>${choice(
     "outcome",
     [
       ["successful", "Successful"],
@@ -582,7 +591,7 @@ function report() {
     ["completed", "Completed"],
     ["partial", "Partial"],
     ["not_completed", "Not completed"],
-  ])}<div class="details"><label class="detail"><span class="label">Flight time</span><input id="flight-minutes" type="number" min="0" step="1" inputmode="numeric" placeholder="Minutes"></label><label class="detail"><span class="label">Distance</span><input id="distance-nm" type="number" min="0" step="1" inputmode="numeric" placeholder="NM"></label></div><label class="label" for="notes">Notable event / pilot notes</label><textarea id="notes" placeholder="Optional operational notes">${esc(state.report.notes)}</textarea><br><button class="action primary" data-action="complete" ${state.submitting ? "disabled" : ""}>${state.submitting ? "Submitting…" : "Submit Flight Report"}</button></div>`;
+  ])}<div class="details"><label class="detail"><span class="label">Flight time</span><input id="flight-minutes" type="number" min="0" step="1" inputmode="numeric" placeholder="Minutes"></label><label class="detail"><span class="label">Distance</span><input id="distance-nm" type="number" min="0" step="1" inputmode="numeric" placeholder="NM"></label></div><label class="label" for="notes">Notable event / pilot notes</label><textarea id="notes" placeholder="Optional operational notes">${esc(state.report.notes)}</textarea><br><button class="action primary" data-action="complete" ${state.submitting ? "disabled" : ""}>${state.submitting ? "Submitting…" : (legDisplay(m, state.active?.current_leg).count > 1 ? `Submit Leg ${legDisplay(m, state.active?.current_leg).current} Report` : "Submit Flight Report")}</button></div>`;
 }
 function auth() {
   return `<section class="hero"><div><div class="eyebrow">Pilot Career</div><h1>Sign in to FlightOps.</h1><p>Your career progression is stored securely in Supabase, not in this browser.</p></div></section><div class="card"><div class="form"><label class="label">Email<input id="email" type="email" autocomplete="email" required></label><label class="label">Password<input id="password" type="password" autocomplete="current-password" required minlength="6"></label><div class="eyebrow">New Pilot Account</div><p class="small">Set your home base. Your career mission geography will grow outward from this airport as you level up.</p><label class="label">Pilot name (new accounts)<input id="pilot-name" maxlength="50" autocomplete="name"></label><label class="label">Callsign (new accounts)<input id="callsign" maxlength="30" autocomplete="nickname"></label><label class="label">Home base airport ICAO (new accounts)<input id="home-base-icao" maxlength="4" minlength="4" autocapitalize="characters" autocomplete="off" placeholder="Example: KCHA" required></label><div class="small">Use the four-letter ICAO code for your home airport. FlightOps uses it as the starting point for your mission geography.</div><div><button class="action primary" data-action="login" ${configured ? "" : "disabled"}>Login</button> <button class="action" data-action="signup" ${configured ? "" : "disabled"}>Create Account</button></div>${configured ? "" : '<div class="notice">Deployment configuration is incomplete. Set <b>VITE_SUPABASE_URL</b> and <b>VITE_SUPABASE_PUBLISHABLE_KEY</b> before using FlightOps.</div>'}</div></div>`;
@@ -762,7 +771,7 @@ async function complete() {
     const d = result.data;
     const earned = Array.isArray(d?.achievements) ? d.achievements : [];
     const newQuals = Array.isArray(d?.qualifications) ? d.qualifications : [];
-    toast(`Flight recorded${d ? `: +${num(d.credits || d.credits_earned)} Cr, +${num(d.xp || d.xp_earned)} XP` : ""}${earned.length ? ` • ${earned.length} achievement${earned.length === 1 ? "" : "s"} earned` : ""}${newQuals.length ? ` • ${newQuals.length} new rating${newQuals.length === 1 ? "" : "s"}` : ""}.`);
+    toast(`${d?.mission_complete === false ? `Leg ${d.leg_number} complete • Next leg ${d.next_leg}: ${d.next_origin} → ${d.next_destination}` : "Flight recorded"}${d && d.credits != null ? ` • +${num(d.credits)} Cr, +${num(d.xp)} XP` : ""}${earned.length ? ` • ${earned.length} achievement${earned.length === 1 ? "" : "s"} earned` : ""}${newQuals.length ? ` • ${newQuals.length} new rating${newQuals.length === 1 ? "" : "s"}` : ""}.`);
     state.submitting = false;
     state.report = {
       outcome: "successful",
@@ -775,7 +784,7 @@ async function complete() {
       distanceNm: 0,
     };
     await load();
-    state.page = "pilot";
+    state.page = d?.mission_complete === false ? "active" : "pilot";
     render();
   } catch (e) {
     state.submitting = false;
