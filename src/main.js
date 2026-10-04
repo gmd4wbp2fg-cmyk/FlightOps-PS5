@@ -195,6 +195,10 @@ async function load() {
   if (generated.error) {
     state.loadErrors.push(`mission generator: ${generated.error.message || "request failed"}`);
   }
+  const advanced = await sb.rpc("upgrade_generated_multileg_missions");
+  if (advanced.error) {
+    state.loadErrors.push(`advanced mission generator: ${advanced.error.message || "request failed"}`);
+  }
 
   const run = async () =>
     Promise.all([
