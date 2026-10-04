@@ -529,7 +529,7 @@ function report() {
     ["no_issues", "No Damage"],
     ["minor_issue", "Minor issue"],
     ["significant_damage", "Significant damage"],
-  ])}<h3>Weather encountered</h3>${choice("weather", [["clear","Clear / VMC"],["wind","Strong Winds"],["rain","Rain"],["low_visibility","Low Visibility"],["imc","IMC"],["turbulence","Turbulence"],["storms","Storms"]])}<h3>Objective</h3>${choice("objective", [
+  ])}<h3>Weather encountered</h3>${choice("weather", [["clear","Clear / VMC"],["wind","Strong Winds"],["rain","Rain"],["low_visibility","Low Visibility"],["imc","IMC"],["turbulence","Turbulence"],["storms","Storms"]])}<div class="callout"><b>LIVE WEATHER CONFIRMATION</b><br><label class="small"><input id="live-weather-confirm" type="checkbox"> I confirm this mission was flown in MSFS 2024 using Live Weather.</label></div><h3>Objective</h3>${choice("objective", [
     ["completed", "Completed"],
     ["partial", "Partial"],
     ["not_completed", "Not completed"],
@@ -686,6 +686,8 @@ async function complete() {
     if (state.submitting) return;
     if (!state.active)
       throw new Error("There is no active mission to complete.");
+    if (!$("#live-weather-confirm")?.checked)
+      throw new Error("Confirm that Live Weather was used before submitting the flight.");
     state.report.notes = $("#notes")?.value || "";
     const weatherLabels = { clear: "Clear / VMC", wind: "Strong Winds", rain: "Rain", low_visibility: "Low Visibility", imc: "IMC", turbulence: "Turbulence", storms: "Storms" };
     const combinedNotes = "Weather encountered: " + (weatherLabels[state.report.weather] || "Not reported") + ". " + state.report.notes;
