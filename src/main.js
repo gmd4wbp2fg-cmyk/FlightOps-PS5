@@ -324,7 +324,10 @@ function loadNotice() {
 }
 function activeView() {
   const m = activeMission();
-  if (!m) { state.page = "missions"; return missionList(); }
+  if (!m) {
+    return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Active Flight</div><h1>No active mission.</h1><p>Once you accept a mission, it will appear here. This page is reserved for the contract you are currently flying.</p></div><div><div class="label">Status</div><div class="money">STANDBY</div></div></section>
+    <div class="grid"><div class="card s8"><div class="eyebrow">Active Mission</div><h2>Nothing dispatched</h2><p class="copy">You do not have a mission in progress right now.</p><button class="action primary" data-page="missions">Go to Mission Board</button></div><div class="card s4"><div class="eyebrow">Mission Flow</div><h2>Choose → Accept → Fly</h2><p class="copy">Pick a contract from the Mission Board. After you accept it, the full dispatch information will appear here.</p></div></div>`;
+  }
   const a = m.aircraft_master || m;
   return `<section class="hero"><div><div class="eyebrow">Active Mission • Dispatch</div><h1>${esc(missionTitle(m))}</h1><p>${esc(m.mission_code || m.id)} • ${esc(route(m))}</p></div><div><div class="label">Contract Value</div><div class="money">${num(m.reward_credits || m.credits)} Cr</div></div></section>
   <div class="grid">
