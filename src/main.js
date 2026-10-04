@@ -163,6 +163,13 @@ function legDisplay(m, currentLeg = 1) {
   const leg = legs[Math.max(0, Number(currentLeg || 1) - 1)] || legs[0];
   return { legs, leg, current: Number(currentLeg || 1), count: legs.length };
 }
+function legPurpose(leg, current, count) {
+  return leg?.leg_purpose || (
+    current === 1 ? "Mission departure" :
+    current === count ? "Mission arrival / final destination" :
+    "Intermediate mission stop"
+  );
+}
 function nav() {
   $("#nav").innerHTML = state.session
     ? ["home", "missions", "active", "hangar", "pilot", "career"]
@@ -482,7 +489,7 @@ function brief() {
       <div class="detail"><div class="label">Qualification</div><strong>${esc(q)}</strong></div>\n      ${m.region_id ? `<div class="detail"><div class="label">Region</div><strong>${esc(m.region_id)}</strong></div>` : ""}
     </div>
     <div class="eyebrow">02 • Route & Flight Planning</div>
-    ${missionLegs(m).length > 1 ? `<div class="callout"><b>Multi-Leg Assignment</b><br><span class="small">Complete each leg in sequence. The mission remains active between legs.</span><div class="details">${missionLegs(m).map((leg, i) => `<div class="detail"><div class="label">Leg ${i + 1}</div><strong>${esc(leg.origin_icao)} → ${esc(leg.destination_icao)}</strong><div class="small">${num(leg.distance_nm)} NM</div></div>`).join("")}</div></div>` : ""}
+    ${missionLegs(m).length > 1 ? `<div class="callout"><b>Multi-Leg Assignment</b><br><span class="small">Complete each leg in sequence. The mission remains active between legs.</span><div class="details">${missionLegs(m).map((leg, i) => `<div class="detail"><div class="label">Leg ${i + 1}</div><strong>${esc(leg.origin_icao)} → ${esc(leg.destination_icao)}</strong><div class="small">${num(leg.distance_nm)} NM • ${esc(legPurpose(leg, i + 1, missionLegs(m).length))}</div>${leg.stop_notes ? `<div class="small">${esc(leg.stop_notes)}</div>` : ""}</div>`).join("")}</div></div>` : ""}
 <p class="copy"><b>${esc(missionTypeContext(m))}</b><br>${esc(missionDestinationContext(m))}<br>${esc(m.route_guidance || m.planning_notes || "Plan the flight in MSFS 2024 Free Flight. Verify the route, altitude, fuel, weather, and destination conditions before departure.")}</p>
     <div class="callout"><b>Planning level:</b> ${esc(planning)}<br><b>FlightOps role:</b> ${planning === "Suggested planning" ? "Use the suggested guidance or plan your own route." : "FlightOps provides the mission requirements; the pilot is responsible for the final flight plan."}</div><div class="callout"><b>WEATHER REQUIREMENT:</b> LIVE WEATHER REQUIRED<br><span class="small">Fly this mission in MSFS 2024 using Live Weather. Custom or preset weather is not permitted for FlightOps missions.</span></div>
     <div class="eyebrow">03 • Charts & References</div><p class="copy">${esc(m.references_text || "Use the current MSFS airport information, navigation data, charts, and procedures available to you before departure.")}</p></div>
