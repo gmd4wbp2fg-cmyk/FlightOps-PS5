@@ -664,6 +664,7 @@ function report() {
       <label class="detail"><span class="label">Distance flown</span><input id="distance-nm" type="number" min="0" step="1" inputmode="numeric" placeholder="NM"></label>
       <p class="small">Enter the actual time and distance shown by your MSFS flight, not the mission estimate.</p>
     </div>
+     + "missionPayloadCard(m)" + 
     <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">03 • Mission Objective</div><h2>Was the objective completed?</h2></div><div class="ops-route-chip">MISSION STANDARD</div></div>
       <div class="callout"><b>Assigned objective:</b><br>${esc(legObj)}<br><span class="small">This result directly affects mission pay, XP, reputation and whether the mission advances.</span></div>
       ${choice("objective",[["completed","Completed"],["partial","Partial"],["not_completed","Not Completed"]])}
