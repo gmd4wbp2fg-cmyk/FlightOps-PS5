@@ -43,6 +43,7 @@ const state = {
     condition: "no_issues",
     objective: "completed",
     notes: "",
+    weather: "clear",
   },
 };
 function toast(message, bad = false) {
@@ -528,7 +529,7 @@ function report() {
     ["no_issues", "No Damage"],
     ["minor_issue", "Minor issue"],
     ["significant_damage", "Significant damage"],
-  ])}<h3>Objective</h3>${choice("objective", [
+  ])}<h3>Weather encountered</h3>${choice("weather", [["clear","Clear / VMC"],["wind","Strong Winds"],["rain","Rain"],["low_visibility","Low Visibility"],["imc","IMC"],["turbulence","Turbulence"],["storms","Storms"]])}<h3>Objective</h3>${choice("objective", [
     ["completed", "Completed"],
     ["partial", "Partial"],
     ["not_completed", "Not completed"],
@@ -686,6 +687,8 @@ async function complete() {
     if (!state.active)
       throw new Error("There is no active mission to complete.");
     state.report.notes = $("#notes")?.value || "";
+    const weatherLabels = { clear: "Clear / VMC", wind: "Strong Winds", rain: "Rain", low_visibility: "Low Visibility", imc: "IMC", turbulence: "Turbulence", storms: "Storms" };
+    const combinedNotes = "Weather encountered: " + (weatherLabels[state.report.weather] || "Not reported") + ". " + state.report.notes;
     state.report.flightMinutes = Math.max(0, Number($("#flight-minutes")?.value || 0));
     state.report.distanceNm = Math.max(0, Number($("#distance-nm")?.value || 0));
     state.submitting = true;
@@ -697,8 +700,8 @@ async function complete() {
       p_landing: r.landing,
       p_aircraft_condition: r.condition,
       p_objective_result: r.objective,
-      p_notable_event: r.notes,
-      p_notes: r.notes,
+      p_notable_event: combinedNotes,
+      p_notes: combinedNotes,
       p_flight_minutes: r.flightMinutes || null,
       p_distance_nm: r.distanceNm || null,
     });
@@ -714,6 +717,7 @@ async function complete() {
       condition: "no_issues",
       objective: "completed",
       notes: "",
+      weather: "clear",
       flightMinutes: 0,
       distanceNm: 0,
     };
