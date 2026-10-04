@@ -62,11 +62,15 @@ function err(e, fallback) {
 function num(v) {
   return Number(v || 0).toLocaleString();
 }
+const LEVEL_XP = [0,1500,4000,7500,12000,18000,23000,29000,36000,44000,53000,63000,74000,87000,101000,116000,132000,150000,170000,190000];
+function levelForXp(xp) {
+  const value = Number(xp || 0);
+  let current = 1;
+  LEVEL_XP.forEach((threshold, index) => { if (value >= threshold) current = index + 1; });
+  return Math.min(20, current);
+}
 function level() {
-  return (
-    state.profile?.level ||
-    Math.floor(Number(state.profile?.xp || 0) / 1000) + 1
-  );
+  return state.profile?.level || levelForXp(state.profile?.xp || 0);
 }
 const EPauletStyle = "<style>\n.epaulet-wrap{display:flex;align-items:center;gap:12px;min-width:205px}\n.epaulet-board{position:relative;width:112px;height:39px;border-radius:4px 7px 7px 4px;background:linear-gradient(145deg,#25313c,#101820);border:1px solid #71808c;box-shadow:0 4px 9px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.16);overflow:hidden;display:flex;align-items:center}\n.epaulet-tip{width:15px;height:100%;background:linear-gradient(90deg,#0b1116,#26333e);clip-path:polygon(0 0,100% 50%,0 100%);flex:none}\n.epaulet-band{height:100%;width:50px;display:flex;align-items:center;justify-content:center;gap:3px;transform:skewX(-8deg)}\n.epaulet-stripe{display:block;width:5px;height:30px;background:linear-gradient(90deg,#c9a33a,#fff3b0 48%,#c9a33a);border-radius:1px;box-shadow:0 0 2px rgba(255,255,255,.35)}\n.epaulet-insignia{flex:1;text-align:center;color:#f4ca55;font-size:14px;letter-spacing:2px;text-shadow:0 1px 2px #000}\n.epaulet-star{display:inline-block;font-size:14px;margin:0 1px}.epaulet-command{display:inline-block;font-size:15px;margin-left:2px}\n</style>";
 function ensureEpauletStyle() {
@@ -594,8 +598,8 @@ function career() {
   const p = state.profile || {};
   const xp = Number(p.xp || 0);
   const current = level();
-  const next = current >= 20 ? 20000 : current * 1000;
-  const previous = Math.max(0, (current - 1) * 1000);
+  const next = current >= 20 ? LEVEL_XP[19] : LEVEL_XP[current];
+  const previous = LEVEL_XP[current - 1];
   const progress = current >= 20 ? 100 : Math.min(100, Math.max(0, ((xp - previous) / Math.max(1, next - previous)) * 100));
   const qual = state.qualifications.map(q => q.qualifications?.code || q.qualification_id).filter(Boolean);
   const aircraft = state.aircraft.map(a => a.aircraft_master?.name || a.aircraft_master?.model || a.aircraft_id).filter(Boolean);
