@@ -62,7 +62,7 @@ function err(e, fallback) {
 function num(v) {
   return Number(v || 0).toLocaleString();
 }
-const LEVEL_XP = [0,1500,4000,7500,12000,18000,23000,29000,36000,44000,53000,63000,74000,87000,101000,116000,132000,150000,170000,190000];
+const LEVEL_XP = [0,3500,6000,8000,12000,18000,23000,29000,36000,44000,53000,63000,74000,87000,101000,116000,132000,150000,170000,190000];
 function levelForXp(xp) {
   const value = Number(xp || 0);
   let current = 1;
