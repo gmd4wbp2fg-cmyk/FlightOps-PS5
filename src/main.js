@@ -37,7 +37,6 @@ const state = {
   loading: false,
   loadErrors: [],
   submitting: false,
-  wb: { pilot: "", fuel: "" },
   report: {
     outcome: "successful",
     landing: "good",
@@ -47,13 +46,6 @@ const state = {
     weather: "clear",
   },
 };
-function updateWeightPlan(field, value) {
-  state.wb[field] = value;
-  const payload = missionPayload(state.selected || state.active?.missions || state.active);
-  const total = payload.total + Number(state.wb.pilot || 0) + Number(state.wb.fuel || 0);
-  const el = $("#wb-total");
-  if (el) el.textContent = `${num(total)} lb`;
-}
 function toast(message, bad = false) {
   const t = $("#toast");
   t.textContent = message;
