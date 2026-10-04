@@ -657,7 +657,7 @@ function report() {
       <div class="label">Overall outcome</div>${choice("outcome",[["successful","Successful"],["rough","Rough Flight"],["failed","Mission Failed"]])}
       <div class="label">Landing performance</div>${choice("landing",[["good","Good"],["hard","Hard"],["go_around","Go-around"]])}
       <div class="label">Aircraft condition</div>${choice("condition",[["no_issues","No Damage"],["minor_issue","Minor Issue"],["significant_damage","Significant Damage"]])}
-      <div class="label">Weather encountered</div>${choice("weather",[["clear","Clear / VMC"],["wind","Strong Winds"],["rain","Rain"],["low_visibility","Low Visibility"],["imc","IMC"],["turbulence","Turbulence"],["storms","Storms"]])}
+      <div class="label">Weather encountered</div>${choice("weather",[["clear","Clear / VMC"],["overcast","Overcast"],["wind","Strong Winds"],["rain","Rain"],["low_visibility","Low Visibility"],["imc","IMC"],["turbulence","Turbulence"],["storms","Storms"]])}
     </div>
     <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">02 • Flight Record</div><h2>Log the actual flight</h2></div><div class="ops-icon">✈</div></div>
       <label class="detail"><span class="label">Flight time</span><input id="flight-minutes" type="number" min="0" step="1" inputmode="numeric" placeholder="Minutes"></label>
@@ -850,7 +850,7 @@ async function complete() {
         : "This leg objective was not completed. You will still advance, but this leg will pay reduced credits/XP and reputation.";
       if (!confirm(warning + "\n\nSubmit this result?")) return;
     }
-    const weatherLabels = { clear: "Clear / VMC", wind: "Strong Winds", rain: "Rain", low_visibility: "Low Visibility", imc: "IMC", turbulence: "Turbulence", storms: "Storms" };
+    const weatherLabels = { clear: "Clear / VMC", overcast: "Overcast", wind: "Strong Winds", rain: "Rain", low_visibility: "Low Visibility", imc: "IMC", turbulence: "Turbulence", storms: "Storms" };
     const combinedNotes = "Weather encountered: " + (weatherLabels[state.report.weather] || "Not reported") + ". " + state.report.notes;
     state.report.flightMinutes = Math.max(0, Number($("#flight-minutes")?.value || 0));
     state.report.distanceNm = Math.max(0, Number($("#distance-nm")?.value || 0));
