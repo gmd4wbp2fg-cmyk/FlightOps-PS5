@@ -44,6 +44,9 @@ const state = {
     objective: "completed",
     notes: "",
     weather: "clear",
+    flightMinutes: "",
+    distanceNm: "",
+    liveWeatherConfirm: false,
   },
 };
 function toast(message, bad = false) {
@@ -660,8 +663,8 @@ function report() {
       <div class="label">Weather encountered</div>${choice("weather",[["clear","Clear / VMC"],["overcast","Overcast"],["wind","Strong Winds"],["rain","Rain"],["low_visibility","Low Visibility"],["imc","IMC"],["turbulence","Turbulence"],["storms","Storms"]])}
     </div>
     <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">02 • Flight Record</div><h2>Log the actual flight</h2></div><div class="ops-icon">✈</div></div>
-      <div class="detail"><div class="label">Flight Time</div><input id="flight-minutes" type="number" min="0" step="1" inputmode="numeric" placeholder="Minutes" aria-label="Flight time in minutes"></div>
-      <div class="detail"><div class="label">Distance Flown</div><input id="distance-nm" type="number" min="0" step="1" inputmode="numeric" placeholder="NM" aria-label="Distance flown in nautical miles"></div>
+      <div class="detail"><div class="label">Flight Time</div><input id="flight-minutes" type="number" min="0" step="1" inputmode="numeric" placeholder="Minutes" aria-label="Flight time in minutes" value="${esc(state.report.flightMinutes || "")}"></div>
+      <div class="detail"><div class="label">Distance Flown</div><input id="distance-nm" type="number" min="0" step="1" inputmode="numeric" placeholder="NM" aria-label="Distance flown in nautical miles" value="${esc(state.report.distanceNm || "")}"></div>
       <p class="small">Enter the actual time and distance shown by your MSFS flight, not the mission estimate.</p>
     </div>
      ${missionPayloadCard(m)}
@@ -672,7 +675,7 @@ function report() {
     </div>
     <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">04 • Weather Verification</div><h2>Live Weather</h2></div><div class="ops-icon">☁</div></div>
       <div class="notice"><b>REQUIRED</b><br>FlightOps missions must be flown using MSFS 2024 Live Weather.</div>
-      <label class="small"><input id="live-weather-confirm" type="checkbox"> I confirm this mission was flown in MSFS 2024 using Live Weather.</label>
+      <label class="small"><input id="live-weather-confirm" type="checkbox" ${state.report.liveWeatherConfirm ? "checked" : ""}> I confirm this mission was flown in MSFS 2024 using Live Weather.</label>
     </div>
     <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">05 • Pilot Report</div><h2>Operational Notes</h2></div><div class="ops-route-chip">PILOT REPORT</div></div>
       <label class="label" for="notes">Notable event / pilot notes</label><textarea id="notes" placeholder="Record weather, diversions, passenger/cargo issues, go-arounds, abnormal events, or anything FlightOps should know.">${esc(state.report.notes)}</textarea>
@@ -710,6 +713,16 @@ function render() {
       )();
   bind();
 }
+function captureReportInputs() {
+  const minutes = $("#flight-minutes")?.value;
+  const distance = $("#distance-nm")?.value;
+  const notes = $("#notes")?.value;
+  const liveWeather = $("#live-weather-confirm")?.checked;
+  if (minutes !== undefined) state.report.flightMinutes = minutes;
+  if (distance !== undefined) state.report.distanceNm = distance;
+  if (notes !== undefined) state.report.notes = notes;
+  if (liveWeather !== undefined) state.report.liveWeatherConfirm = liveWeather;
+}
 function bind() {
   $("#app")
     .querySelectorAll("[data-page]")
@@ -739,10 +752,15 @@ function bind() {
     .forEach(
       (b) =>
         (b.onclick = () => {
+          captureReportInputs();
           state.report[b.dataset.choice] = b.dataset.value;
           render();
         }),
     );
+  $("#flight-minutes")?.addEventListener("input", (e) => { state.report.flightMinutes = e.target.value; });
+  $("#distance-nm")?.addEventListener("input", (e) => { state.report.distanceNm = e.target.value; });
+  $("#notes")?.addEventListener("input", (e) => { state.report.notes = e.target.value; });
+  $("#live-weather-confirm")?.addEventListener("change", (e) => { state.report.liveWeatherConfirm = e.target.checked; });
   $('[data-action="login"]')?.addEventListener("click", login);
   $('[data-action="signup"]')?.addEventListener("click", signup);
   $('[data-action="accept"]')?.addEventListener("click", accept);
@@ -839,7 +857,8 @@ async function complete() {
     if (state.submitting) return;
     if (!state.active)
       throw new Error("There is no active mission to complete.");
-    if (!$("#live-weather-confirm")?.checked)
+    captureReportInputs();
+    if (!state.report.liveWeatherConfirm)
       throw new Error("Confirm that Live Weather was used before submitting the flight.");
     state.report.notes = $("#notes")?.value || "";
     const currentLegState = legDisplay(state.active, state.active?.current_leg);
