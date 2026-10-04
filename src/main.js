@@ -464,6 +464,16 @@ function career() {
   const qual = state.qualifications.map(q => q.qualifications?.code || q.qualification_id).filter(Boolean);
   const aircraft = state.aircraft.map(a => a.aircraft_master?.name || a.aircraft_master?.model || a.aircraft_id).filter(Boolean);
   const earnedAchievementIds = new Set(state.pilotAchievements.map(a => a.achievement_id));
+  const achievementProgress = (id) => {
+    const flights = Number(p.total_flights || state.history.length || 0);
+    const missions = Number(p.completed_missions || 0);
+    const minutes = Number(p.total_flight_minutes || 0);
+    const nm = Number(p.total_nm || 0);
+    const targets = { FIRST_FLIGHT:[flights,1], FIRST_MISSION:[missions,1], TEN_FLIGHTS:[flights,10], TEN_MISSIONS:[missions,10], FIRST_TURBOPROP:[qual.includes("TURBOPROP")?1:0,1], FIRST_JET:[qual.includes("JET")?1:0,1], TEN_HOURS:[minutes,600], THOUSAND_NM:[nm,1000], TWENTY_FIVE_FLIGHTS:[flights,25], TWENTY_FIVE_MISSIONS:[missions,25], LEVEL_10:[current,10], LEVEL_20:[current,20] };
+    const t = targets[id];
+    if (!t) return "";
+    return t[0] >= t[1] ? "EARNED" : id === "TEN_HOURS" ? `${Math.floor(t[0]/60)} / 10h` : id === "THOUSAND_NM" ? `${num(t[0])} / 1,000 NM` : `${num(t[0])} / ${num(t[1])}`;
+  };
   const milestones = [
     ["PPL", "Starter qualification", qual.includes("PPL"), "Complete your first flight career milestone."],
     ["CPL", "Commercial Pilot", qual.includes("CPL"), "Unlock cargo and charter operations."],
@@ -482,7 +492,7 @@ function career() {
     <div class="card s4"><div class="eyebrow">Career Record</div><h2>${num(p.total_flights || state.history.length)} Flights</h2><p class="small">${num(p.completed_missions)} missions • ${num(p.reputation)} reputation</p><div class="details"><div class="detail"><span class="label">Flight Time</span><strong>${Math.floor(Number(p.total_flight_minutes || 0) / 60)}h ${Number(p.total_flight_minutes || 0) % 60}m</strong></div><div class="detail"><span class="label">Distance</span><strong>${num(p.total_nm || 0)} NM</strong></div></div></div>
     <div class="card s7"><div class="eyebrow">Qualification Path</div><h2>Your Ratings</h2>${milestones.map(([code,name,owned,desc])=>`<div class="historyrow"><div><b>${esc(name)}</b><div class="small">${esc(code)} • ${esc(desc)}</div></div><div class="${owned ? "owned" : "small"}">${owned ? "● ACTIVE" : "LOCKED"}</div></div>`).join("")}</div>
     <div class="card s5"><div class="eyebrow">Aircraft Path</div><h2>Current Hangar</h2>${aircraft.length ? aircraft.map(x=>`<div class="historyrow"><div><b>${esc(x)}</b></div><div class="owned">OWNED</div></div>`).join("") : '<p class="small">No aircraft assigned.</p>'}<p class="copy">New aircraft become useful when your qualifications and level support them.</p></div>
-    <div class="card s12"><div class="eyebrow">Achievements</div><h2>Career Milestones</h2><p class="copy">Earn rewards by flying, completing missions, building hours and distance, and reaching command-level milestones.</p><div class="fleet">${state.achievements.map(a=>`<div class="plane ${earnedAchievementIds.has(a.id) ? "" : "locked"}"><h3>${esc(a.name)}</h3><div class="small">${esc(a.description)}</div><div class="small">${earnedAchievementIds.has(a.id) ? "● EARNED" : "LOCKED"} • +${num(a.xp_reward)} XP • ${num(a.credit_reward)} Cr</div></div>`).join("")}</div></div>
+    <div class="card s12"><div class="eyebrow">Achievements</div><h2>Career Milestones</h2><p class="copy">Earn rewards by flying, completing missions, building hours and distance, and reaching command-level milestones.</p><div class="fleet">${state.achievements.map(a=>`<div class="plane ${earnedAchievementIds.has(a.id) ? "" : "locked"}"><h3>${esc(a.name)}</h3><div class="small">${esc(a.description)}</div><div class="small">${earnedAchievementIds.has(a.id) ? "● EARNED" : achievementProgress(a.id)} • +${num(a.xp_reward)} XP • ${num(a.credit_reward)} Cr</div></div>`).join("")}</div></div>
     <div class="card s12"><div class="eyebrow">20-Level Career Ladder</div><h2>Where you're going</h2>${levelRows.map((r,i)=>`<div class="historyrow"><div><b>Level ${r[0]} • ${esc(r[1])}</b><div class="small">${esc(r[2])}</div></div><div class="${Number(r[0])===current ? "owned" : "small"}">${Number(r[0])===current ? "CURRENT" : Number(r[0])<current ? "COMPLETED" : "LOCKED"}</div></div>`).join("")}</div>
   </div>`;
 }
