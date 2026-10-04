@@ -37,6 +37,7 @@ const state = {
   loading: false,
   loadErrors: [],
   submitting: false,
+  feedbackRating: 0,
   report: {
     outcome: "successful",
     landing: "good",
@@ -191,7 +192,7 @@ function legPurpose(leg, current, count) {
 }
 function nav() {
   $("#nav").innerHTML = state.session
-    ? ["home", "missions", "active", "hangar", "pilot", "career"]
+    ? ["home", "missions", "active", "hangar", "pilot", "career", "feedback"]
         .map(
           (x) =>
             `<button data-page="${x}" class="${state.page === x ? "active" : ""}">${x[0].toUpperCase() + x.slice(1)}</button>`,
@@ -694,6 +695,21 @@ function report() {
     <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">07 • Dispatch Result</div><h2>${d.count > 1 && d.current < d.count ? "Next Leg" : "Mission Completion"}</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> PENDING</div></div><p class="copy">${d.count > 1 && d.current < d.count ? "A successful submission advances the dispatch to the next leg. An incomplete objective still advances with reduced rewards." : "Final mission rewards are calculated after the report is accepted."}</p></div>
   </div>`;
 }
+function feedback() {
+  const stars = [1, 2, 3, 4, 5].map((n) =>
+    '<button type="button" class="plane choice ' + (state.feedbackRating === n ? "selected" : "") + '" data-feedback-rating="' + n + '"><b>' + "★".repeat(n) + '</b><span class="small">' + n + '/5</span></button>'
+  ).join("");
+  return '<section class="hero"><div><div class="eyebrow">FlightOps Pilot Feedback</div><h1>Help us improve FlightOps.</h1><p>This is an early pilot test. Tell us what works, what does not, and what you want added. Your feedback goes directly into the FlightOps feedback log.</p></div></section>' +
+  '<div class="grid">' +
+  '<div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Pilot Feedback</div><h2>Send us your input</h2></div><div class="ops-route-chip">FEEDBACK</div></div>' +
+  '<label class="label">Feedback type<select id="feedback-category"><option value="general">General feedback</option><option value="bug">Bug / something not working</option><option value="mission">Mission / flight operations</option><option value="career">Career progression</option><option value="ui">Website / user interface</option><option value="feature_request">Feature request</option><option value="other">Other</option></select></label>' +
+  '<div class="label">Overall experience<div class="fleet">' + stars + '</div></div>' +
+  '<label class="label" for="feedback-message">Your feedback<textarea id="feedback-message" maxlength="4000" placeholder="What do you like? What should we change? What would make you come back and fly another mission?"></textarea></label>' +
+  '<button class="action primary" data-action="submit-feedback">Send Feedback</button><p class="small">Please do not include passwords, payment information, or other sensitive information.</p></div>' +
+  '<div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">What we want to know</div><h2>Be honest</h2></div><div class="ops-icon">◆</div></div>' +
+  '<ul class="small"><li>Would you use FlightOps for your MSFS 2024 career?</li><li>What should we add?</li><li>What is confusing or frustrating?</li><li>What would make you fly another mission?</li></ul>' +
+  '<div class="callout"><b>Your feedback matters.</b><br>We are using pilot feedback to decide what FlightOps becomes next.</div></div></div>';
+}
 function auth() {
   return `<section class="hero"><div><div class="eyebrow">Pilot Career</div><h1>Sign in to FlightOps.</h1><p>Your career progression is stored securely in Supabase, not in this browser.</p></div></section><div class="card"><div class="form"><label class="label">Email<input id="email" type="email" autocomplete="email" required></label><label class="label">Password<input id="password" type="password" autocomplete="current-password" required minlength="6"></label><div class="eyebrow">New Pilot Account</div><p class="small">Set your home base. Your career mission geography will grow outward from this airport as you level up.</p><label class="label">Pilot name (new accounts)<input id="pilot-name" maxlength="50" autocomplete="name"></label><label class="label">Callsign (new accounts)<input id="callsign" maxlength="30" autocomplete="nickname"></label><label class="label">Home base airport ICAO (new accounts)<input id="home-base-icao" maxlength="4" minlength="4" autocapitalize="characters" autocomplete="off" placeholder="Example: KCHA" required></label><div class="small">Use the four-letter ICAO code for your home airport. FlightOps uses it as the starting point for your mission geography.</div><div><button class="action primary" data-action="login" ${configured ? "" : "disabled"}>Login</button> <button class="action" data-action="signup" ${configured ? "" : "disabled"}>Create Account</button></div>${configured ? "" : '<div class="notice">Deployment configuration is incomplete. Set <b>VITE_SUPABASE_URL</b> and <b>VITE_SUPABASE_PUBLISHABLE_KEY</b> before using FlightOps.</div>'}</div></div>`;
 }
@@ -713,6 +729,7 @@ function render() {
           hangar,
           pilot,
           career,
+          feedback,
           report,
           edit: editProfile,
         }[state.page] || home
@@ -775,6 +792,14 @@ function bind() {
     render();
   });
   $('[data-action="complete"]')?.addEventListener("click", complete);
+  $('[data-action="submit-feedback"]')?.addEventListener("click", submitFeedback);
+  $("#app").querySelectorAll("[data-feedback-rating]").forEach((b) =>
+    b.addEventListener("click", () => {
+      $("#app").querySelectorAll("[data-feedback-rating]").forEach((x) => x.classList.remove("selected"));
+      b.classList.add("selected");
+      state.feedbackRating = Number(b.dataset.feedbackRating);
+    }),
+  );
   $('[data-action="edit-profile"]')?.addEventListener("click", () => {
     state.page = "edit";
     render();
@@ -917,6 +942,30 @@ async function complete() {
     state.submitting = false;
     err(e, "Mission completion failed. No rewards were applied.");
     render();
+  }
+}
+async function submitFeedback() {
+  try {
+    const message = $("#feedback-message")?.value.trim();
+    const category = $("#feedback-category")?.value || "general";
+    const rating = Number(state.feedbackRating || 0) || null;
+    if (!message || message.length < 3) throw new Error("Please enter at least a few words of feedback.");
+    const result = await sb.from("pilot_feedback").insert({
+      pilot_id: state.session.user.id,
+      pilot_name: state.profile?.pilot_name || state.profile?.name || null,
+      callsign: state.profile?.callsign || null,
+      category,
+      rating,
+      message,
+      page: state.page,
+    });
+    if (result.error) throw result.error;
+    state.feedbackRating = 0;
+    toast("Thank you. Your feedback was submitted.");
+    state.page = "home";
+    render();
+  } catch (e) {
+    err(e, "Feedback could not be submitted.");
   }
 }
 async function purchaseAircraft(aircraftId) {
