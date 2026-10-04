@@ -110,12 +110,18 @@ async function load() {
   state.loadErrors = [];
   state.loading = true;
 
+  // Refresh the mission board from the secure generator before loading offers.
+  const generated = await sb.rpc("generate_mission_offers");
+  if (generated.error) {
+    state.loadErrors.push(`mission generator: ${generated.error.message || "request failed"}`);
+  }
+
   const run = async () =>
     Promise.all([
       sb.from("pilot_profiles").select("*").eq("id", uid).maybeSingle(),
       sb.from("pilot_qualifications").select("*").eq("pilot_id", uid),
       sb.from("pilot_aircraft").select("*").eq("pilot_id", uid),
-      sb.from("missions").select("*"),
+      sb.from("missions").select("*").eq("active", true),
       sb.from("active_missions").select("*").eq("pilot_id", uid).maybeSingle(),
       sb
         .from("flight_reports")
@@ -356,7 +362,7 @@ function missionList() {
   const ms = missions().filter((m) => missionId(m) !== activeId);
   return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Mission Board</div><h1>Choose your next assignment.</h1><p>Browse available contracts. Your current flight is shown on the Active tab.</p></div><div><div class="label">Available Contracts</div><div class="money">${ms.length}</div></div></section>
   ${active ? `<div class="notice"><b>Active mission:</b> ${esc(missionTitle(active))} • ${esc(route(active))}. Complete it before accepting another contract. <button class="action primary" data-action="report">Complete Mission</button></div>` : ""}
-  <div class="grid"><div class="card s8">${ms.length ? ms.map((m) => `<div class="mission"><div><span class="tag">${esc(m.mission_code || m.id)}</span><span class="tag">${esc(m.mission_type || m.type || "MISSION")}</span><h3>${esc(missionTitle(m))}</h3><div class="route">${esc(route(m))} • ${esc(aircraftName(m.aircraft_master || m))}</div><div class="small">${esc(m.distance_nm || m.distance || "—")} NM • ${num(m.reward_credits || m.credits)} Cr • +${num(m.reward_xp || m.xp)} XP</div></div><button class="action primary" data-brief="${m.id}" ${state.active ? "disabled" : ""}>View Brief</button></div>`).join("") : '<p class="small">No missions currently meet your ownership, qualification, and level requirements.</p>'}</div><div class="card s4"><div class="eyebrow">Eligibility</div><h2>Fly what you own.</h2><p class="copy">Aircraft ownership + qualification + pilot level determine what appears here. Locked missions stay hidden.</p></div></div>`;
+  <div class="grid"><div class="card s8">${ms.length ? ms.map((m) => `<div class="mission"><div><span class="tag">${esc(m.mission_code || m.id)}</span><span class="tag">${esc(m.mission_type || m.type || "MISSION")}</span>${m.region_id ? `<span class="tag">${esc(m.region_id)}</span>` : ""}<h3>${esc(missionTitle(m))}</h3><div class="route">${esc(route(m))} • ${esc(aircraftName(m.aircraft_master || m))}</div><div class="small">${esc(m.distance_nm || m.distance || "—")} NM • ${num(m.reward_credits || m.credits)} Cr • +${num(m.reward_xp || m.xp)} XP</div></div><button class="action primary" data-brief="${m.id}" ${state.active ? "disabled" : ""}>View Brief</button></div>`).join("") : '<p class="small">No missions currently meet your ownership, qualification, and level requirements.</p>'}</div><div class="card s4"><div class="eyebrow">Operating Regions</div><h2>More places to fly.</h2><p class="copy">FlightOps now supports region-based contracts. New offers can rotate through Texas, the Southeast, Southwest, California, Florida, the Rockies, Alaska, the Pacific Northwest, Canada, Mexico, the Caribbean, Central America, South America, Europe, the Middle East, Africa, and Asia Pacific as your career expands.</p><div class="callout"><b>Career rule:</b> You only see missions you can actually fly with your aircraft, qualification, and level.</div></div></div>`;
 }
 function brief() {
   const m = state.selected;
@@ -370,7 +376,7 @@ function brief() {
       <div class="detail"><div class="label">Aircraft</div><strong>${esc(aircraftName(a))}</strong></div>
       <div class="detail"><div class="label">Route</div><strong>${esc(route(m))}</strong></div>
       <div class="detail"><div class="label">Distance</div><strong>${esc(m.distance_nm || m.distance || "—")} NM</strong></div>
-      <div class="detail"><div class="label">Qualification</div><strong>${esc(q)}</strong></div>
+      <div class="detail"><div class="label">Qualification</div><strong>${esc(q)}</strong></div>\n      ${m.region_id ? `<div class="detail"><div class="label">Region</div><strong>${esc(m.region_id)}</strong></div>` : ""}
     </div>
     <div class="eyebrow">02 • Route & Flight Planning</div><p class="copy">${esc(m.route_guidance || m.planning_notes || "Plan the flight in MSFS 2024 Free Flight. Verify the route, altitude, fuel, weather, and destination conditions before departure.")}</p>
     <div class="callout"><b>Planning level:</b> ${esc(planning)}<br><b>FlightOps role:</b> ${planning === "Suggested planning" ? "Use the suggested guidance or plan your own route." : "FlightOps provides the mission requirements; the pilot is responsible for the final flight plan."}</div>
