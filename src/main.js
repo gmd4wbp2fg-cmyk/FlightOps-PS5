@@ -31,6 +31,8 @@ const state = {
   active: null,
   history: [],
   selected: null,
+  loading: false,
+  loadErrors: [],
   submitting: false,
   report: {
     outcome: "successful",
@@ -63,10 +65,13 @@ function missionTitle(m) {
   return m.title || m.name || m.mission_id || "Mission";
 }
 function aircraftName(a) {
+  const master = a.aircraft_master || a;
   return (
-    a.aircraft_master?.name ||
+    master.name ||
+    (master.manufacturer && master.model
+      ? `${master.manufacturer} ${master.model}`
+      : master.model) ||
     a.name ||
-    a.aircraft_master?.model ||
     a.aircraft_id ||
     "Assigned aircraft"
   );
@@ -74,7 +79,7 @@ function aircraftName(a) {
 function route(m) {
   return (
     m.route ||
-    `${m.departure_airport?.icao_code || m.departure_icao || "—"} → ${m.destination_airport?.icao_code || m.destination_icao || "—"}`
+    `${m.origin_icao || m.departure_icao || m.departure_airport?.icao_code || "—"} → ${m.destination_icao || m.destination_airport?.icao_code || "—"}`
   );
 }
 function nav() {
@@ -101,27 +106,52 @@ async function load() {
   if (!sb || !state.session) return;
 
   const uid = state.session.user.id;
+  state.loadErrors = [];
+  state.loading = true;
 
-  const base = await Promise.all([
-    sb.from("pilot_profiles").select("*").eq("id", uid).maybeSingle(),
-    sb.from("pilot_qualifications").select("*").eq("pilot_id", uid),
-    sb.from("pilot_aircraft").select("*").eq("pilot_id", uid),
-    sb.from("missions").select("*"),
-    sb.from("active_missions").select("*").eq("pilot_id", uid).maybeSingle(),
-    sb
-      .from("flight_reports")
-      .select("*")
-      .eq("pilot_id", uid)
-      .order("created_at", { ascending: false })
-      .limit(30),
-  ]);
+  const run = async () =>
+    Promise.all([
+      sb.from("pilot_profiles").select("*").eq("id", uid).maybeSingle(),
+      sb.from("pilot_qualifications").select("*").eq("pilot_id", uid),
+      sb.from("pilot_aircraft").select("*").eq("pilot_id", uid),
+      sb.from("missions").select("*"),
+      sb.from("active_missions").select("*").eq("pilot_id", uid).maybeSingle(),
+      sb
+        .from("flight_reports")
+        .select("*")
+        .eq("pilot_id", uid)
+        .order("created_at", { ascending: false })
+        .limit(30),
+    ]);
 
-  const bad = base.find((x) => x.error);
+  let base = await run();
 
-  if (bad) {
-    err(bad.error, "Could not load your career.");
-    return;
+  // A stale browser access token can make an otherwise healthy career look empty.
+  // Refresh once before treating authenticated reads as failed.
+  if (base.some((x) => x.error?.code === "PGRST301" || x.status === 401)) {
+    const refreshed = await sb.auth.refreshSession();
+    if (!refreshed.error && refreshed.data.session) {
+      state.session = refreshed.data.session;
+      base = await run();
+    }
   }
+
+  const names = [
+    "pilot profile",
+    "pilot qualifications",
+    "pilot aircraft",
+    "missions",
+    "active mission",
+    "flight history",
+  ];
+
+  const values = base.map((x, i) => {
+    if (x.error) {
+      state.loadErrors.push(`${names[i]}: ${x.error.message || "request failed"}`);
+      return i === 0 ? null : [];
+    }
+    return x.data;
+  });
 
   const [
     profile,
@@ -130,7 +160,7 @@ async function load() {
     missionsData,
     activeData,
     historyData,
-  ] = base.map((x) => x.data || []);
+  ] = values;
 
   const qualificationIds = [
     ...new Set([
@@ -153,25 +183,30 @@ async function load() {
     qualificationIds.length
       ? sb.from("qualifications").select("*").in("id", qualificationIds)
       : Promise.resolve({ data: [], error: null }),
-
     aircraftIds.length
       ? sb.from("aircraft_master").select("*").in("id", aircraftIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
 
-  const lookupError = lookups.find((x) => x.error);
+  const qualificationLookup = lookups[0];
+  const aircraftLookup = lookups[1];
 
-  if (lookupError) {
-    err(lookupError.error, "Could not load your aircraft and qualifications.");
-    return;
+  if (qualificationLookup.error) {
+    state.loadErrors.push(
+      `qualification catalog: ${qualificationLookup.error.message || "request failed"}`,
+    );
+  }
+  if (aircraftLookup.error) {
+    state.loadErrors.push(
+      `aircraft catalog: ${aircraftLookup.error.message || "request failed"}`,
+    );
   }
 
   const qualificationMap = new Map(
-    (lookups[0].data || []).map((x) => [x.id, x]),
+    (qualificationLookup.data || []).map((x) => [x.id, x]),
   );
-
   const aircraftMap = new Map(
-    (lookups[1].data || []).map((x) => [x.id, x]),
+    (aircraftLookup.data || []).map((x) => [x.id, x]),
   );
 
   const qualifications = pilotQualifications.map((x) => ({
@@ -186,6 +221,11 @@ async function load() {
 
   const missions = missionsData.map((x) => ({
     ...x,
+    // Normalize database field names to the UI's career model.
+    reward_credits: x.reward_credits ?? x.base_reward ?? 0,
+    reward_xp: x.reward_xp ?? x.base_xp ?? 0,
+    objective: x.objective ?? x.special_objective ?? null,
+    route: x.route ?? `${x.origin_icao || "—"} → ${x.destination_icao || "—"}`,
     aircraft_master: aircraftMap.get(x.required_aircraft_id) || null,
     required_qualification:
       qualificationMap.get(x.required_qualification_id) || null,
@@ -206,7 +246,7 @@ async function load() {
   const history = historyData.map((x) => ({
     ...x,
     aircraft_master: aircraftMap.get(x.aircraft_id) || null,
-    missions: missionsData.find((m) => m.id === x.mission_id) || null,
+    missions: missions.find((m) => m.id === x.mission_id) || null,
   }));
 
   state.profile = profile;
@@ -215,10 +255,15 @@ async function load() {
   state.missions = missions;
   state.active = active;
   state.history = history;
+  state.loading = false;
+
+  if (state.loadErrors.length) {
+    console.warn("FlightOps career load issues:", state.loadErrors);
+  }
 
   if (!state.profile) {
     toast(
-      "Your pilot profile is still being created. Reload in a moment.",
+      "Your pilot profile could not be loaded. Sign out and back in if this persists.",
       true,
     );
   }
@@ -273,14 +318,18 @@ function activeMission() {
 function activeMissionDetails(mission) {
   return `<div class="details"><div class="detail"><div class="label">Aircraft</div><strong>${esc(aircraftName(mission.aircraft_master || mission))}</strong></div><div class="detail"><div class="label">Route</div><strong>${esc(route(mission))}</strong></div><div class="detail"><div class="label">Reward</div><strong>${num(mission.reward_credits || mission.credits)} Cr</strong></div><div class="detail"><div class="label">Experience</div><strong>+${num(mission.reward_xp || mission.xp)} XP</strong></div></div><div class="callout"><b>Objective:</b> ${esc(mission.objective || mission.mission_objective || "Complete the assigned route safely.")}</div>`;
 }
+function loadNotice() {
+  if (!state.loadErrors?.length) return "";
+  return `<div class="notice"><b>Career data needs attention.</b><br>${esc(state.loadErrors.join(" • "))}</div>`;
+}
 function home() {
   const p = state.profile;
   const active = activeMission();
-  return `<section class="hero"><div><div class="eyebrow">Pilot Career</div><h1>Welcome, ${esc(p?.pilot_name || p?.name || "Pilot")}.</h1><p>${esc(p?.callsign || "Independent operator")} • Your browser career is synced securely.</p></div><div><div class="label">Available Funds</div><div class="money">${num(p?.credits)} Cr</div></div></section><div class="grid"><div class="card s4"><div class="label">Pilot Level</div><div class="stat">Level ${level()}</div><div class="small">${num(p?.xp)} XP • ${num(p?.reputation)} reputation</div></div><div class="card s4"><div class="label">Completed Flights</div><div class="stat">${num(p?.flights_completed || state.history.length)}</div><div class="small">${num(p?.missions_completed)} missions completed</div></div><div class="card s4"><div class="label">Current Aircraft</div><div class="stat">${esc(aircraftName(state.aircraft[0] || {}))}</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.code || x.qualifications?.name)).join(" • ") || "Loading starter PPL…"}</div></div><div class="card s12">${active ? `<div class="eyebrow">Active Mission</div><h2>${esc(missionTitle(active))}</h2><p class="route">${esc(route(active))} • ${esc(aircraftName(active.aircraft_master || active))}</p>${activeMissionDetails(active)}<button class="action primary" data-action="report">Complete Mission</button>` : `<div class="eyebrow">Next Flight</div><h2>${missions().length ? "Available contracts" : "No eligible missions"}</h2><p class="small">${missions().length ? "Choose a contract from the mission board." : "Missions appear only when you own the required aircraft, qualification, and level."}</p>`}</div></div>`;
+  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Pilot Career</div><h1>Welcome, ${esc(p?.pilot_name || p?.name || "Pilot")}.</h1><p>${esc(p?.callsign || "Independent operator")} • Your browser career is synced securely.</p></div><div><div class="label">Available Funds</div><div class="money">${num(p?.credits)} Cr</div></div></section><div class="grid"><div class="card s4"><div class="label">Pilot Level</div><div class="stat">Level ${level()}</div><div class="small">${num(p?.xp)} XP • ${num(p?.reputation)} reputation</div></div><div class="card s4"><div class="label">Completed Flights</div><div class="stat">${num(p?.flights_completed || state.history.length)}</div><div class="small">${num(p?.missions_completed)} missions completed</div></div><div class="card s4"><div class="label">Current Aircraft</div><div class="stat">${esc(aircraftName(state.aircraft[0] || {}))}</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.code || x.qualifications?.name)).join(" • ") || "Loading starter PPL…"}</div></div><div class="card s12">${active ? `<div class="eyebrow">Active Mission</div><h2>${esc(missionTitle(active))}</h2><p class="route">${esc(route(active))} • ${esc(aircraftName(active.aircraft_master || active))}</p>${activeMissionDetails(active)}<button class="action primary" data-action="report">Complete Mission</button>` : `<div class="eyebrow">Next Flight</div><h2>${missions().length ? "Available contracts" : "No eligible missions"}</h2><p class="small">${missions().length ? "Choose a contract from the mission board." : "Missions appear only when you own the required aircraft, qualification, and level."}</p>`}</div></div>`;
 }
 function missionList() {
   const ms = missions();
-  return `<section class="hero"><div><div class="eyebrow">Mission Board</div><h1>Choose your assignment.</h1><p>Only contracts your pilot can legally fly are shown.</p></div></section><div class="grid"><div class="card s8">${state.active ? '<div class="notice"><b>You already have an active mission.</b><br>Complete or resolve it before accepting another contract.</div>' : ""}${ms.length ? ms.map((m) => `<div class="mission"><div><span class="tag">${esc(m.mission_code || m.id)}</span><span class="tag">${esc(m.mission_type || m.type || "MISSION")}</span><h3>${esc(missionTitle(m))}</h3><div class="route">${esc(route(m))} • ${esc(aircraftName(m.aircraft_master || m))}</div><div class="small">${num(m.reward_credits || m.credits)} Cr • ${num(m.reward_xp || m.xp)} XP</div></div><button class="action primary" data-brief="${m.id}" ${state.active ? "disabled" : ""}>View brief</button></div>`).join("") : '<p class="small">No missions currently meet your ownership, qualification, and level requirements.</p>'}</div><div class="card s4"><div class="eyebrow">Eligibility</div><h2>Fly what you own.</h2><p class="copy">FlightOps checks the authoritative pilot aircraft, qualifications, and level before showing a contract.</p></div></div>`;
+  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Mission Board</div><h1>Choose your assignment.</h1><p>Only contracts your pilot can legally fly are shown.</p></div></section><div class="grid"><div class="card s8">${state.active ? '<div class="notice"><b>You already have an active mission.</b><br>Complete or resolve it before accepting another contract.</div>' : ""}${ms.length ? ms.map((m) => `<div class="mission"><div><span class="tag">${esc(m.mission_code || m.id)}</span><span class="tag">${esc(m.mission_type || m.type || "MISSION")}</span><h3>${esc(missionTitle(m))}</h3><div class="route">${esc(route(m))} • ${esc(aircraftName(m.aircraft_master || m))}</div><div class="small">${num(m.reward_credits || m.credits)} Cr • ${num(m.reward_xp || m.xp)} XP</div></div><button class="action primary" data-brief="${m.id}" ${state.active ? "disabled" : ""}>View brief</button></div>`).join("") : '<p class="small">No missions currently meet your ownership, qualification, and level requirements.</p>'}</div><div class="card s4"><div class="eyebrow">Eligibility</div><h2>Fly what you own.</h2><p class="copy">FlightOps checks the authoritative pilot aircraft, qualifications, and level before showing a contract.</p></div></div>`;
 }
 function brief() {
   const m = state.selected;
@@ -295,7 +344,7 @@ function hangar() {
 }
 function pilot() {
   const p = state.profile || {};
-  return `<section class="hero"><div><div class="eyebrow">Pilot Record</div><h1>${esc(p.pilot_name || p.name || "Pilot")}</h1><p>${esc(p.callsign || "No callsign set")} • MSFS 2024 • PS5</p></div><button class="action" data-action="edit-profile">Edit profile</button></section><div class="grid"><div class="card s4"><div class="label">Level / XP</div><div class="stat">${level()} / ${num(p.xp)} XP</div></div><div class="card s4"><div class="label">Credits / Reputation</div><div class="stat">${num(p.credits)} Cr</div><div class="small">${num(p.reputation)} reputation</div></div><div class="card s4"><div class="label">Qualifications</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.name || x.qualifications?.code)).join("<br>") || "None"}</div></div><div class="card s12"><div class="eyebrow">Flight History</div>${state.history.length ? state.history.map((h) => `<div class="historyrow"><div><b>${esc(missionTitle(h.missions || h))}</b><div class="small">${esc(new Date(h.completed_at || h.created_at).toLocaleString())} • ${esc(aircraftName(h.aircraft_master || h))}</div><div class="small">${esc(route(h.missions || h))} • ${esc(h.outcome || "Recorded")} • Landing: ${esc(h.landing || h.landing_quality || "—")}</div></div><div style="text-align:right"><b class="owned">+${num(h.credits_earned || h.reward_credits)} Cr</b><div class="small">+${num(h.xp_earned || h.reward_xp)} XP</div></div></div>`).join("") : '<p class="small">Your completed flights will appear here.</p>'}</div></div>`;
+  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Pilot Record</div><h1>${esc(p.pilot_name || p.name || "Pilot")}</h1><p>${esc(p.callsign || "No callsign set")} • MSFS 2024 • PS5</p></div><button class="action" data-action="edit-profile">Edit profile</button></section><div class="grid"><div class="card s4"><div class="label">Level / XP</div><div class="stat">${level()} / ${num(p.xp)} XP</div></div><div class="card s4"><div class="label">Credits / Reputation</div><div class="stat">${num(p.credits)} Cr</div><div class="small">${num(p.reputation)} reputation</div></div><div class="card s4"><div class="label">Qualifications</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.name || x.qualifications?.code)).join("<br>") || "None"}</div></div><div class="card s12"><div class="eyebrow">Flight History</div>${state.history.length ? state.history.map((h) => `<div class="historyrow"><div><b>${esc(missionTitle(h.missions || h))}</b><div class="small">${esc(new Date(h.completed_at || h.created_at).toLocaleString())} • ${esc(aircraftName(h.aircraft_master || h))}</div><div class="small">${esc(route(h.missions || h))} • ${esc(h.outcome || "Recorded")} • Landing: ${esc(h.landing || h.landing_quality || "—")}</div></div><div style="text-align:right"><b class="owned">+${num(h.credits_earned || h.reward_credits)} Cr</b><div class="small">+${num(h.xp_earned || h.reward_xp)} XP</div></div></div>`).join("") : '<p class="small">Your completed flights will appear here.</p>'}</div></div>`;
 }
 function report() {
   const m = state.active?.missions || state.active;
