@@ -114,6 +114,18 @@ function missionWeather(m) {
     ? "Live Weather required"
     : (m.weather_requirement || "Check current weather before departure");
 }
+function missionPayload(m) {
+  const raw = Array.isArray(m?.payload_manifest) ? m.payload_manifest : [];
+  const items = raw.filter((x) => x?.type !== "payload_total");
+  const total = raw.find((x) => x?.type === "payload_total")?.weight_lb ??
+    items.reduce((sum, x) => sum + Number(x?.weight_lb || 0), 0);
+  return { items, total };
+}
+function missionPayloadCard(m) {
+  const p = missionPayload(m);
+  if (!p.items.length) return "";
+  return `<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Payload • Weight & Balance</div><h2>Mission Manifest</h2></div><div class="ops-route-chip">PLANNING WEIGHT</div></div><p class="small">FlightOps planning manifest. Verify actual loading and aircraft weight & balance limits in MSFS before departure.</p><div class="details">${p.items.map((x) => `<div class="detail"><div class="label">${esc(x.description || x.type)}</div><strong>${num(x.count || 1)} × ${num(x.weight_lb || 0)} lb</strong><div class="small">Item total: ${num((x.count || 1) * (x.weight_lb || 0))} lb</div></div>`).join("")}<div class="detail"><div class="label">Mission payload total</div><strong>${num(p.total)} lb</strong><div class="small">Excludes pilot, fuel and aircraft empty weight.</div></div></div></div>`;
+}
 function missionTypeContext(m) {
   const type = String(m.mission_type || "").toUpperCase();
   const title = String(m.title || "").toLowerCase();
@@ -508,6 +520,7 @@ function brief() {
       <div class="callout"><b>Planning standard:</b> ${esc(planning)}<br>${planning === "Suggested planning" ? "FlightOps provides a suggested framework. The pilot may modify the route and remains responsible for the final plan." : "The pilot is responsible for the final route, altitude, fuel, alternate, weather, and navigation plan."}</div>
       <p class="copy"><b>Altitude reference:</b> ${altText}<br><b>Fuel planning:</b> ${fuelText}<br><b>Estimated time:</b> ${blockText}. Actual time will depend on routing, winds, traffic, taxi, and ATC.</p>
     </div>
+    ${missionPayloadCard(m)}
     <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">03 • Aircraft & Airport</div><h2>Dispatch Checks</h2></div><div class="ops-icon">◈</div></div>
       <p class="copy"><b>Aircraft:</b> ${esc(aircraftName(a))}<br>${num(a.seats || 0)} seats • ${num(a.engines || 1)} engine${Number(a.engines||1)===1?"":"s"} • ${esc(a.engine_type || "—")}</p>
       <div class="eyebrow">Airport Review</div><p class="copy">${airportText}</p>
