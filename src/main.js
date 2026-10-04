@@ -706,6 +706,7 @@ async function complete() {
       p_notes: combinedNotes,
       p_flight_minutes: r.flightMinutes || null,
       p_distance_nm: r.distanceNm || null,
+      p_live_weather_confirm: true,
     });
     if (result.error) throw result.error;
     const d = result.data;
