@@ -522,6 +522,11 @@ function brief() {
       <p class="copy"><b>Altitude reference:</b> ${altText}<br><b>Fuel planning:</b> ${fuelText}<br><b>Estimated time:</b> ${blockText}. Actual time will depend on routing, winds, traffic, taxi, and ATC.</p>
     </div>
     ${missionPayloadCard(m)}
+    <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">03 • Weight & Balance</div><h2>Load Planning</h2></div><div class="ops-icon">⚖</div></div>
+      <p class="copy">Use the mission manifest as your starting load. In MSFS, enter the actual passenger/cargo distribution, fuel and pilot weight for the aircraft.</p>
+      <div class="callout"><b>Before departure:</b><br>Confirm takeoff weight, center of gravity and aircraft loading remain within the aircraft's published limits.</div>
+      <p class="small">FlightOps provides mission payload guidance only. The simulator's aircraft-specific weight-and-balance model is authoritative.</p>
+    </div>
     <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">03 • Aircraft & Airport</div><h2>Dispatch Checks</h2></div><div class="ops-icon">◈</div></div>
       <p class="copy"><b>Aircraft:</b> ${esc(aircraftName(a))}<br>${num(a.seats || 0)} seats • ${num(a.engines || 1)} engine${Number(a.engines||1)===1?"":"s"} • ${esc(a.engine_type || "—")}</p>
       <div class="eyebrow">Airport Review</div><p class="copy">${airportText}</p>
@@ -548,8 +553,9 @@ function brief() {
         <div class="detail"><div class="label">1</div><strong>Verify aircraft</strong><div class="small">Use the assigned/eligible aircraft in MSFS.</div></div>
         <div class="detail"><div class="label">2</div><strong>Build the flight plan</strong><div class="small">Route, altitude, fuel, alternate and navigation.</div></div>
         <div class="detail"><div class="label">3</div><strong>Set Live Weather</strong><div class="small">Preset/custom weather is not permitted.</div></div>
-        <div class="detail"><div class="label">4</div><strong>Fly the mission</strong><div class="small">Use normal operating procedures and sound judgment.</div></div>
-        <div class="detail"><div class="label">5</div><strong>Debrief honestly</strong><div class="small">Report outcome, landing, weather, aircraft condition and objective.</div></div>
+        <div class="detail"><div class="label">4</div><strong>Set Weight & Balance</strong><div class="small">Load the mission payload and verify CG / takeoff weight in MSFS.</div></div>
+        <div class="detail"><div class="label">5</div><strong>Fly the mission</strong><div class="small">Use normal operating procedures and sound judgment.</div></div>
+        <div class="detail"><div class="label">6</div><strong>Debrief honestly</strong><div class="small">Report outcome, landing, weather, aircraft condition and objective.</div></div>
       </div>
     </div>
     <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">07 • Mission Objective</div><h2>Success Standard</h2></div><div class="ops-icon">✓</div></div><div class="callout"><b>${esc(m.objective || m.mission_objective || "Complete the assigned route safely and accomplish the mission objective.")}</b></div><p class="copy">Mission success is determined during debrief. Safe flight and objective completion matter more than simply reaching the destination.</p></div>
