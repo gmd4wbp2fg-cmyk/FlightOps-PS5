@@ -31,6 +31,8 @@ const state = {
   missions: [],
   active: null,
   history: [],
+  achievements: [],
+  pilotAchievements: [],
   selected: null,
   loading: false,
   loadErrors: [],
@@ -152,6 +154,8 @@ async function load() {
       sb.from("pilot_aircraft").select("*").eq("pilot_id", uid),
       sb.from("missions").select("*").eq("active", true),
       sb.from("active_missions").select("*").eq("pilot_id", uid).maybeSingle(),
+      sb.from("achievements").select("*").eq("active", true).order("id"),
+      sb.from("pilot_achievements").select("*").eq("pilot_id", uid),
       sb
         .from("flight_reports")
         .select("*")
@@ -178,6 +182,8 @@ async function load() {
     "pilot aircraft",
     "missions",
     "active mission",
+    "achievements",
+    "pilot achievements",
     "flight history",
   ];
 
@@ -195,6 +201,8 @@ async function load() {
     pilotAircraft,
     missionsData,
     activeData,
+    achievementsData,
+    pilotAchievementsData,
     historyData,
   ] = values;
 
@@ -288,6 +296,8 @@ async function load() {
   state.aircraftCatalog = aircraftCatalog;
   state.missions = missions;
   state.active = active;
+  state.achievements = achievementsData || [];
+  state.pilotAchievements = pilotAchievementsData || [];
   state.history = history;
   state.loading = false;
 
@@ -452,6 +462,7 @@ function career() {
   const progress = current >= 20 ? 100 : Math.min(100, Math.max(0, ((xp - previous) / Math.max(1, next - previous)) * 100));
   const qual = state.qualifications.map(q => q.qualifications?.code || q.qualification_id).filter(Boolean);
   const aircraft = state.aircraft.map(a => a.aircraft_master?.name || a.aircraft_master?.model || a.aircraft_id).filter(Boolean);
+  const earnedAchievementIds = new Set(state.pilotAchievements.map(a => a.achievement_id));
   const milestones = [
     ["PPL", "Starter qualification", qual.includes("PPL"), "Complete your first flight career milestone."],
     ["CPL", "Commercial Pilot", qual.includes("CPL"), "Unlock cargo and charter operations."],
@@ -470,6 +481,7 @@ function career() {
     <div class="card s4"><div class="eyebrow">Career Record</div><h2>${num(p.flights_completed || state.history.length)} Flights</h2><p class="small">${num(p.missions_completed)} missions • ${num(p.reputation)} reputation</p></div>
     <div class="card s7"><div class="eyebrow">Qualification Path</div><h2>Your Ratings</h2>${milestones.map(([code,name,owned,desc])=>`<div class="historyrow"><div><b>${esc(name)}</b><div class="small">${esc(code)} • ${esc(desc)}</div></div><div class="${owned ? "owned" : "small"}">${owned ? "● ACTIVE" : "LOCKED"}</div></div>`).join("")}</div>
     <div class="card s5"><div class="eyebrow">Aircraft Path</div><h2>Current Hangar</h2>${aircraft.length ? aircraft.map(x=>`<div class="historyrow"><div><b>${esc(x)}</b></div><div class="owned">OWNED</div></div>`).join("") : '<p class="small">No aircraft assigned.</p>'}<p class="copy">New aircraft become useful when your qualifications and level support them.</p></div>
+    <div class="card s12"><div class="eyebrow">Achievements</div><h2>Career Milestones</h2><div class="fleet">${state.achievements.map(a=>`<div class="plane ${earnedAchievementIds.has(a.id) ? "" : "locked"}"><h3>${esc(a.name)}</h3><div class="small">${esc(a.description)}</div><div class="small">${earnedAchievementIds.has(a.id) ? "● EARNED" : "LOCKED"} • +${num(a.xp_reward)} XP • ${num(a.credit_reward)} Cr</div></div>`).join("")}</div></div>
     <div class="card s12"><div class="eyebrow">20-Level Career Ladder</div><h2>Where you're going</h2>${levelRows.map((r,i)=>`<div class="historyrow"><div><b>Level ${r[0]} • ${esc(r[1])}</b><div class="small">${esc(r[2])}</div></div><div class="${Number(r[0])===current ? "owned" : "small"}">${Number(r[0])===current ? "CURRENT" : Number(r[0])<current ? "COMPLETED" : "LOCKED"}</div></div>`).join("")}</div>
   </div>`;
 }
@@ -667,7 +679,8 @@ async function complete() {
       p_outcome: r.outcome,
       p_landing: r.landing,
       p_aircraft_condition: r.condition,
-      p_objective_status: r.objective,
+      p_objective_result: r.objective,
+      p_notable_event: r.notes,
       p_notes: r.notes,
     };
     const result = await rpc("complete_active_mission", [
@@ -677,14 +690,14 @@ async function complete() {
         outcome: r.outcome,
         landing: r.landing,
         aircraft_condition: r.condition,
-        objective_status: r.objective,
+        objective_result: r.objective,
+        notable_event: r.notes,
         notes: r.notes,
       },
     ]);
     const d = result.data;
-    toast(
-      `Flight recorded${d ? `: +${num(d.credits || d.credits_earned)} Cr, +${num(d.xp || d.xp_earned)} XP` : ""}.`,
-    );
+    const earned = Array.isArray(d?.achievements) ? d.achievements : [];
+    toast(`Flight recorded${d ? `: +${num(d.credits || d.credits_earned)} Cr, +${num(d.xp || d.xp_earned)} XP` : ""}${earned.length ? ` • ${earned.length} achievement${earned.length === 1 ? "" : "s"} earned` : ""}.`);
     state.submitting = false;
     state.report = {
       outcome: "successful",
@@ -758,6 +771,8 @@ async function boot() {
         missions: [],
         active: null,
         history: [],
+        achievements: [],
+        pilotAchievements: [],
       });
       render();
     }
