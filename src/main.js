@@ -460,9 +460,11 @@ function render() {
         {
           home,
           missions: missionList,
+          active: activeView,
           brief,
           hangar,
           pilot,
+          career,
           report,
           edit: editProfile,
         }[state.page] || home
