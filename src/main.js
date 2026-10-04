@@ -114,6 +114,28 @@ function missionWeather(m) {
     ? "Live Weather required"
     : (m.weather_requirement || "Check current weather before departure");
 }
+function missionTypeContext(m) {
+  const type = String(m.mission_type || "").toUpperCase();
+  const title = String(m.title || "").toLowerCase();
+  if (type.includes("MEDICAL") || type.includes("MEDEVAC") || title.includes("medical")) {
+    return "Priority medical operation — minimize unnecessary delay while maintaining safe margins.";
+  }
+  if (type.includes("CARGO") || title.includes("cargo") || title.includes("supply")) {
+    return "Cargo operation — verify loading, aircraft limitations, fuel and destination handling requirements.";
+  }
+  if (type.includes("CHARTER") || title.includes("executive") || title.includes("vip") || title.includes("scenic")) {
+    return "Passenger charter — prioritize a smooth, professional flight and confirm destination suitability.";
+  }
+  return "General flight operation — complete the assigned objective safely and professionally.";
+}
+function missionDestinationContext(m) {
+  const destination = m.destination_icao || m.destination_airport?.icao_code || "destination";
+  const distance = Number(m.distance_nm || 0);
+  if (distance <= 75) return destination + " is a short-range assignment from home base; local weather and runway conditions are the primary planning focus.";
+  if (distance <= 150) return destination + " is within the current local career radius; review fuel, winds, terrain and destination conditions before departure.";
+  if (distance <= 500) return destination + " is a regional assignment; confirm fuel reserves, alternate planning and changing weather along the route.";
+  return destination + " is an extended assignment; complete captain-level route, altitude, fuel, alternate and weather planning.";
+}
 function aircraftName(a) {
   const master = a.aircraft_master || a;
   return (
@@ -446,7 +468,7 @@ function brief() {
       <div class="detail"><div class="label">Distance</div><strong>${esc(m.distance_nm || m.distance || "—")} NM</strong></div>
       <div class="detail"><div class="label">Qualification</div><strong>${esc(q)}</strong></div>\n      ${m.region_id ? `<div class="detail"><div class="label">Region</div><strong>${esc(m.region_id)}</strong></div>` : ""}
     </div>
-    <div class="eyebrow">02 • Route & Flight Planning</div><p class="copy">${esc(m.route_guidance || m.planning_notes || "Plan the flight in MSFS 2024 Free Flight. Verify the route, altitude, fuel, weather, and destination conditions before departure.")}</p>
+    <div class="eyebrow">02 • Route & Flight Planning</div><p class="copy"><b>${esc(missionTypeContext(m))}</b><br>${esc(missionDestinationContext(m))}<br>${esc(m.route_guidance || m.planning_notes || "Plan the flight in MSFS 2024 Free Flight. Verify the route, altitude, fuel, weather, and destination conditions before departure.")}</p>
     <div class="callout"><b>Planning level:</b> ${esc(planning)}<br><b>FlightOps role:</b> ${planning === "Suggested planning" ? "Use the suggested guidance or plan your own route." : "FlightOps provides the mission requirements; the pilot is responsible for the final flight plan."}</div><div class="callout"><b>WEATHER REQUIREMENT:</b> LIVE WEATHER REQUIRED<br><span class="small">Fly this mission in MSFS 2024 using Live Weather. Custom or preset weather is not permitted for FlightOps missions.</span></div>
     <div class="eyebrow">03 • Charts & References</div><p class="copy">${esc(m.references_text || "Use the current MSFS airport information, navigation data, charts, and procedures available to you before departure.")}</p></div>
     <div class="card s4"><div class="eyebrow">04 • Operational Conditions</div><h2>Before You Fly</h2><p class="copy">${esc(m.weather_text || m.weather_notes || "Check current weather, winds, visibility, runway conditions, and operational considerations.")}</p>
