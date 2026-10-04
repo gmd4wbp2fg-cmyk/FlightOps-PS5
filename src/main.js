@@ -674,27 +674,17 @@ async function complete() {
     render();
     const r = state.report,
       id = state.active?.id;
-    const payload = {
-      p_active_mission_id: id,
+    const result = await sb.rpc("complete_active_mission", {
       p_outcome: r.outcome,
       p_landing: r.landing,
       p_aircraft_condition: r.condition,
       p_objective_result: r.objective,
       p_notable_event: r.notes,
       p_notes: r.notes,
-    };
-    const result = await rpc("complete_active_mission", [
-      payload,
-      {
-        active_mission_id: id,
-        outcome: r.outcome,
-        landing: r.landing,
-        aircraft_condition: r.condition,
-        objective_result: r.objective,
-        notable_event: r.notes,
-        notes: r.notes,
-      },
-    ]);
+      p_flight_minutes: null,
+      p_distance_nm: null,
+    });
+    if (result.error) throw result.error;
     const d = result.data;
     const earned = Array.isArray(d?.achievements) ? d.achievements : [];
     const newQuals = Array.isArray(d?.qualifications) ? d.qualifications : [];
