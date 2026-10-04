@@ -62,6 +62,25 @@ function level() {
     Math.floor(Number(state.profile?.xp || 0) / 1000) + 1
   );
 }
+function pilotRank(lvl = level()) {
+  const n = Math.max(1, Math.min(20, Number(lvl) || 1));
+  if (n <= 2) return { title: "Junior Pilot", stripes: 1, stars: 0 };
+  if (n <= 4) return { title: "First Officer", stripes: 2, stars: 0 };
+  if (n <= 7) return { title: "Senior First Officer", stripes: 2, stars: 1 };
+  if (n <= 10) return { title: "Captain", stripes: 3, stars: 0 };
+  if (n <= 13) return { title: "Senior Captain", stripes: 4, stars: 0 };
+  if (n <= 16) return { title: "Chief Captain", stripes: 4, stars: 1 };
+  if (n <= 18) return { title: "Senior Command Captain", stripes: 4, stars: 2 };
+  if (n === 19) return { title: "Master Captain", stripes: 4, stars: 3 };
+  return { title: "FlightOps Command Pilot", stripes: 4, stars: 0, command: true };
+}
+function epaulet(lvl = level()) {
+  const r = pilotRank(lvl);
+  const stripes = Array.from({ length: r.stripes }, () => '<span class="epaulet-stripe"></span>').join("");
+  const stars = Array.from({ length: r.stars }, () => '<span class="epaulet-star">★</span>').join("");
+  const command = r.command ? '<span class="epaulet-command">◆</span>' : "";
+  return '<div class="epaulet-wrap" title="FlightOps career rank"><div class="epaulet" aria-label="' + esc(r.title) + ', Level ' + lvl + '">' + stripes + stars + command + '</div><div><div class="label">Rank</div><strong>' + esc(r.title) + '</strong><div class="small">Level ' + lvl + '</div></div></div>';
+}
 function missionTitle(m) {
   return m.title || m.name || m.mission_id || "Mission";
 }
@@ -353,7 +372,7 @@ function activeView() {
 function home() {
   const p = state.profile;
   const active = activeMission();
-  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Pilot Career</div><h1>Welcome, ${esc(p?.pilot_name || p?.name || "Pilot")}.</h1><p>${esc(p?.callsign || "Independent operator")} • Your browser career is synced securely.</p></div><div><div class="label">Available Funds</div><div class="money">${num(p?.credits)} Cr</div></div></section><div class="grid"><div class="card s4"><div class="label">Pilot Level</div><div class="stat">Level ${level()}</div><div class="small">${num(p?.xp)} XP • ${num(p?.reputation)} reputation</div></div><div class="card s4"><div class="label">Completed Flights</div><div class="stat">${num(p?.flights_completed || state.history.length)}</div><div class="small">${num(p?.missions_completed)} missions completed</div></div><div class="card s4"><div class="label">Current Aircraft</div><div class="stat">${esc(aircraftName(state.aircraft[0] || {}))}</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.code || x.qualifications?.name)).join(" • ") || "Loading starter PPL…"}</div></div><div class="card s12">${active ? `<div class="eyebrow">Active Mission</div><h2>${esc(missionTitle(active))}</h2><p class="route">${esc(route(active))} • ${esc(aircraftName(active.aircraft_master || active))}</p>${activeMissionDetails(active)}<button class="action primary" data-action="report">Complete Mission</button>` : `<div class="eyebrow">Next Flight</div><h2>${missions().length ? "Available contracts" : "No eligible missions"}</h2><p class="small">${missions().length ? "Choose a contract from the mission board." : "Missions appear only when you own the required aircraft, qualification, and level."}</p>`}</div></div>`;
+  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Pilot Career</div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><h1>Welcome, ${esc(p?.pilot_name || p?.name || "Pilot")}.</h1><p>${esc(p?.callsign || "Independent operator")} • Your browser career is synced securely.</p></div>${epaulet()}</div></div><div><div class="label">Available Funds</div><div class="money">${num(p?.credits)} Cr</div></div></section><div class="grid"><div class="card s4"><div class="label">Pilot Level</div><div class="stat">Level ${level()}</div><div class="small">${num(p?.xp)} XP • ${num(p?.reputation)} reputation</div></div><div class="card s4"><div class="label">Completed Flights</div><div class="stat">${num(p?.flights_completed || state.history.length)}</div><div class="small">${num(p?.missions_completed)} missions completed</div></div><div class="card s4"><div class="label">Current Aircraft</div><div class="stat">${esc(aircraftName(state.aircraft[0] || {}))}</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.code || x.qualifications?.name)).join(" • ") || "Loading starter PPL…"}</div></div><div class="card s12">${active ? `<div class="eyebrow">Active Mission</div><h2>${esc(missionTitle(active))}</h2><p class="route">${esc(route(active))} • ${esc(aircraftName(active.aircraft_master || active))}</p>${activeMissionDetails(active)}<button class="action primary" data-action="report">Complete Mission</button>` : `<div class="eyebrow">Next Flight</div><h2>${missions().length ? "Available contracts" : "No eligible missions"}</h2><p class="small">${missions().length ? "Choose a contract from the mission board." : "Missions appear only when you own the required aircraft, qualification, and level."}</p>`}</div></div>`;
 }
 function missionList() {
   const active = activeMission();
@@ -435,7 +454,7 @@ function career() {
   const levelRows = [
     ["1","New Pilot","C172 / basic GA"],["2","Developing Pilot","Local contracts"],["3","Commercial Track","Caravan eligibility"],["4","Regional Pilot","Corvalis / regional contracts"],["5","Experienced Pilot","Higher-value GA"],["6","Turboprop Track","PC-12 / TBM path"],["7","Senior Pilot","Advanced regional"],["8","Senior Captain","Complex operations"],["9","Jet Track","PC-24 / Vision Jet path"],["10","Captain","Premium executive contracts"],["11","Senior Captain","Higher-risk contracts"],["12","Jet Captain","CJ4 path"],["13","Executive Captain","Executive charter"],["14","Advanced Captain","Special operations"],["15","Command Pilot","Premium operations"],["16","Long Range Track","Longitude path"],["17","International Captain","Long-range missions"],["18","Senior Command","Elite contracts"],["19","Master Track","Highest-tier preparation"],["20","Master Pilot","Endgame career"]
   ];
-  return `<section class="hero"><div><div class="eyebrow">Career Progression</div><h1>Level ${current} • ${esc(levelRows[Math.min(current,20)-1]?.[1] || "Pilot")}</h1><p>Earn XP by flying missions. Qualifications and aircraft expand your career.</p></div><div><div class="label">Career XP</div><div class="money">${num(xp)} XP</div></div></section>
+  return `<section class="hero"><div><div class="eyebrow">Career Progression</div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><h1>Level ${current} • ${esc(pilotRank(current).title)}</h1><p>Earn XP by flying missions. Qualifications and aircraft expand your career.</p></div>${epaulet(current)}</div></div><div><div class="label">Career XP</div><div class="money">${num(xp)} XP</div></div></section>
   <div class="grid">
     <div class="card s8"><div class="eyebrow">Level Progress</div><h2>Level ${current}${current < 20 ? ` → Level ${current + 1}` : " • MAX"} </h2><div class="bar"><div class="fill" style="width:${progress}%"></div></div><p class="small">${current < 20 ? `${num(Math.max(0,next-xp))} XP to next level` : "Master Pilot reached."}</p></div>
     <div class="card s4"><div class="eyebrow">Career Record</div><h2>${num(p.flights_completed || state.history.length)} Flights</h2><p class="small">${num(p.missions_completed)} missions • ${num(p.reputation)} reputation</p></div>
@@ -446,7 +465,7 @@ function career() {
 }
 function pilot() {
   const p = state.profile || {};
-  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Pilot Record</div><h1>${esc(p.pilot_name || p.name || "Pilot")}</h1><p>${esc(p.callsign || "No callsign set")} • MSFS 2024 • PS5</p></div><button class="action" data-action="edit-profile">Edit profile</button></section><div class="grid"><div class="card s4"><div class="label">Level / XP</div><div class="stat">${level()} / ${num(p.xp)} XP</div></div><div class="card s4"><div class="label">Credits / Reputation</div><div class="stat">${num(p.credits)} Cr</div><div class="small">${num(p.reputation)} reputation</div></div><div class="card s4"><div class="label">Qualifications</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.name || x.qualifications?.code)).join("<br>") || "None"}</div></div><div class="card s12"><div class="eyebrow">Flight History</div>${state.history.length ? state.history.map((h) => `<div class="historyrow"><div><b>${esc(missionTitle(h.missions || h))}</b><div class="small">${esc(new Date(h.completed_at || h.created_at).toLocaleString())} • ${esc(aircraftName(h.aircraft_master || h))}</div><div class="small">${esc(route(h.missions || h))} • ${esc(h.outcome || "Recorded")} • Landing: ${esc(h.landing || h.landing_quality || "—")}</div></div><div style="text-align:right"><b class="owned">+${num(h.earned_credits || h.credits_earned || h.reward_credits)} Cr</b><div class="small">+${num(h.earned_xp || h.xp_earned || h.reward_xp)} XP</div></div></div>`).join("") : '<p class="small">Your completed flights will appear here.</p>'}</div></div>`;
+  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Pilot Record</div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><h1>${esc(p.pilot_name || p.name || "Pilot")}</h1><p>${esc(p.callsign || "No callsign set")} • MSFS 2024 • PS5</p></div>${epaulet()}</div></div><button class="action" data-action="edit-profile">Edit profile</button></section><div class="grid"><div class="card s4"><div class="label">Level / XP</div><div class="stat">${level()} / ${num(p.xp)} XP</div></div><div class="card s4"><div class="label">Credits / Reputation</div><div class="stat">${num(p.credits)} Cr</div><div class="small">${num(p.reputation)} reputation</div></div><div class="card s4"><div class="label">Qualifications</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.name || x.qualifications?.code)).join("<br>") || "None"}</div></div><div class="card s12"><div class="eyebrow">Flight History</div>${state.history.length ? state.history.map((h) => `<div class="historyrow"><div><b>${esc(missionTitle(h.missions || h))}</b><div class="small">${esc(new Date(h.completed_at || h.created_at).toLocaleString())} • ${esc(aircraftName(h.aircraft_master || h))}</div><div class="small">${esc(route(h.missions || h))} • ${esc(h.outcome || "Recorded")} • Landing: ${esc(h.landing || h.landing_quality || "—")}</div></div><div style="text-align:right"><b class="owned">+${num(h.earned_credits || h.credits_earned || h.reward_credits)} Cr</b><div class="small">+${num(h.earned_xp || h.xp_earned || h.reward_xp)} XP</div></div></div>`).join("") : '<p class="small">Your completed flights will appear here.</p>'}</div></div>`;
 }
 function report() {
   const m = state.active?.missions || state.active;
@@ -456,7 +475,7 @@ function report() {
   }
   const choice = (field, values) =>
     `<div class="fleet">${values.map(([v, l]) => `<button class="plane choice ${state.report[field] === v ? "selected" : ""}" data-choice="${field}" data-value="${v}"><b>${l}</b></button>`).join("")}</div>`;
-  return `<section class="hero"><div><div class="eyebrow">Flight Debrief</div><h1>${esc(missionTitle(m))}</h1><p>${esc(route(m))} • Tell FlightOps what happened.</p></div></section><div class="card"><h3>Outcome</h3>${choice(
+  return `<section class="hero"><div><div class="eyebrow">Flight Debrief</div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><h1>${esc(missionTitle(m))}</h1><p>${esc(route(m))} • Tell FlightOps what happened.</p></div>${epaulet()}</div></div></section><div class="card"><h3>Outcome</h3>${choice(
     "outcome",
     [
       ["successful", "Successful"],
