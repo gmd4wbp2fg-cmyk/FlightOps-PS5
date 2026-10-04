@@ -62,6 +62,16 @@ function level() {
     Math.floor(Number(state.profile?.xp || 0) / 1000) + 1
   );
 }
+const EPauletStyle = "<style>\n.epaulet-wrap{display:flex;align-items:center;gap:12px;min-width:205px}\n.epaulet-board{position:relative;width:112px;height:39px;border-radius:4px 7px 7px 4px;background:linear-gradient(145deg,#25313c,#101820);border:1px solid #71808c;box-shadow:0 4px 9px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.16);overflow:hidden;display:flex;align-items:center}\n.epaulet-tip{width:15px;height:100%;background:linear-gradient(90deg,#0b1116,#26333e);clip-path:polygon(0 0,100% 50%,0 100%);flex:none}\n.epaulet-band{height:100%;width:50px;display:flex;align-items:center;justify-content:center;gap:3px;transform:skewX(-8deg)}\n.epaulet-stripe{display:block;width:5px;height:30px;background:linear-gradient(90deg,#c9a33a,#fff3b0 48%,#c9a33a);border-radius:1px;box-shadow:0 0 2px rgba(255,255,255,.35)}\n.epaulet-insignia{flex:1;text-align:center;color:#f4ca55;font-size:14px;letter-spacing:2px;text-shadow:0 1px 2px #000}\n.epaulet-star{display:inline-block;font-size:14px;margin:0 1px}.epaulet-command{display:inline-block;font-size:15px;margin-left:2px}\n</style>";
+function ensureEpauletStyle() {
+  if (!document.getElementById("flightops-epaulet-style")) {
+    const s = document.createElement("style");
+    s.id = "flightops-epaulet-style";
+    s.textContent = "\n.epaulet-wrap{display:flex;align-items:center;gap:12px;min-width:205px}\n.epaulet-board{position:relative;width:112px;height:39px;border-radius:4px 7px 7px 4px;background:linear-gradient(145deg,#25313c,#101820);border:1px solid #71808c;box-shadow:0 4px 9px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.16);overflow:hidden;display:flex;align-items:center}\n.epaulet-tip{width:15px;height:100%;background:linear-gradient(90deg,#0b1116,#26333e);clip-path:polygon(0 0,100% 50%,0 100%);flex:none}\n.epaulet-band{height:100%;width:50px;display:flex;align-items:center;justify-content:center;gap:3px;transform:skewX(-8deg)}\n.epaulet-stripe{display:block;width:5px;height:30px;background:linear-gradient(90deg,#c9a33a,#fff3b0 48%,#c9a33a);border-radius:1px;box-shadow:0 0 2px rgba(255,255,255,.35)}\n.epaulet-insignia{flex:1;text-align:center;color:#f4ca55;font-size:14px;letter-spacing:2px;text-shadow:0 1px 2px #000}\n.epaulet-star{display:inline-block;font-size:14px;margin:0 1px}.epaulet-command{display:inline-block;font-size:15px;margin-left:2px}\n";
+    document.head.appendChild(s);
+  }
+}
+
 function pilotRank(lvl = level()) {
   const n = Math.max(1, Math.min(20, Number(lvl) || 1));
   if (n <= 2) return { title: "Junior Pilot", stripes: 1, stars: 0 };
@@ -74,7 +84,7 @@ function pilotRank(lvl = level()) {
   if (n === 19) return { title: "Master Captain", stripes: 4, stars: 3 };
   return { title: "FlightOps Command Pilot", stripes: 4, stars: 0, command: true };
 }
-function epaulet(lvl = level()) {
+function epaulet(lvl = level()) {\n  ensureEpauletStyle();
   const r = pilotRank(lvl);
   const stripes = Array.from({ length: r.stripes }, () => '<span class="epaulet-stripe"></span>').join("");
   const stars = Array.from({ length: r.stars }, () => '<span class="epaulet-star">★</span>').join("");
