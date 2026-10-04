@@ -84,7 +84,7 @@ function route(m) {
 }
 function nav() {
   $("#nav").innerHTML = state.session
-    ? ["home", "missions", "active", "hangar", "pilot"]
+    ? ["home", "missions", "active", "hangar", "pilot", "career"]
         .map(
           (x) =>
             `<button data-page="${x}" class="${state.page === x ? "active" : ""}">${x[0].toUpperCase() + x.slice(1)}</button>`,
@@ -382,6 +382,36 @@ function brief() {
 }
 function hangar() {
   return `<section class="hero"><div><div class="eyebrow">Virtual Hangar</div><h1>Your aircraft.</h1><p>Ownership is loaded from your FlightOps career record.</p></div></section><div class="fleet">${state.aircraft.length ? state.aircraft.map((a) => `<div class="plane"><div class="owned">● OWNED</div><h3>${esc(aircraftName(a))}</h3><div class="small">${esc(a.aircraft_master?.category || a.aircraft_master?.role || "Aircraft")}</div></div>`).join("") : '<div class="notice">No aircraft are available yet. New pilots receive the C172 through the backend starter trigger.</div>'}</div>`;
+}
+function career() {
+  const p = state.profile || {};
+  const xp = Number(p.xp || 0);
+  const current = level();
+  const next = current >= 20 ? 20000 : current * 1000;
+  const previous = Math.max(0, (current - 1) * 1000);
+  const progress = current >= 20 ? 100 : Math.min(100, Math.max(0, ((xp - previous) / Math.max(1, next - previous)) * 100));
+  const qual = state.qualifications.map(q => q.qualifications?.code || q.qualification_id).filter(Boolean);
+  const aircraft = state.aircraft.map(a => a.aircraft_master?.name || a.aircraft_master?.model || a.aircraft_id).filter(Boolean);
+  const milestones = [
+    ["PPL", "Starter qualification", qual.includes("PPL"), "Complete your first flight career milestone."],
+    ["CPL", "Commercial Pilot", qual.includes("CPL"), "Unlock cargo and charter operations."],
+    ["IR", "Instrument Rating", qual.includes("IR"), "Unlock IFR and weather-sensitive missions."],
+    ["MULTI", "Multi-Engine", qual.includes("MULTI"), "Unlock multi-engine aircraft operations."],
+    ["TURBOPROP", "Turboprop", qual.includes("TURBOPROP"), "Unlock PC-12 and similar missions."],
+    ["JET", "Jet Rating", qual.includes("JET"), "Unlock business jet operations."],
+    ["LONG", "Long Range", qual.includes("LONG"), "Unlock long-range captain missions."]
+  ];
+  const levelRows = [
+    ["1","New Pilot","C172 / basic GA"],["2","Developing Pilot","Local contracts"],["3","Commercial Track","Caravan eligibility"],["4","Regional Pilot","Regional contracts"],["5","Experienced Pilot","Higher-value GA"],["6","Turboprop Track","PC-12 path"],["7","Senior Pilot","Advanced regional"],["8","Senior Captain","Complex operations"],["9","Jet Track","PC-24 / jet path"],["10","Captain","Premium contracts"],["11","Senior Captain","Higher-risk contracts"],["12","Jet Captain","CJ4 path"],["13","Executive Captain","Executive charter"],["14","Advanced Captain","Special operations"],["15","Command Pilot","Premium operations"],["16","Long Range Track","Longitude path"],["17","International Captain","Long-range missions"],["18","Senior Command","Elite contracts"],["19","Master Track","Highest-tier preparation"],["20","Master Pilot","Endgame career"]
+  ];
+  return `<section class="hero"><div><div class="eyebrow">Career Progression</div><h1>Level ${current} • ${esc(levelRows[Math.min(current,20)-1]?.[1] || "Pilot")}</h1><p>Earn XP by flying missions. Qualifications and aircraft expand your career.</p></div><div><div class="label">Career XP</div><div class="money">${num(xp)} XP</div></div></section>
+  <div class="grid">
+    <div class="card s8"><div class="eyebrow">Level Progress</div><h2>Level ${current}${current < 20 ? ` → Level ${current + 1}` : " • MAX"} </h2><div class="bar"><div class="fill" style="width:${progress}%"></div></div><p class="small">${current < 20 ? `${num(Math.max(0,next-xp))} XP to next level` : "Master Pilot reached."}</p></div>
+    <div class="card s4"><div class="eyebrow">Career Record</div><h2>${num(p.flights_completed || state.history.length)} Flights</h2><p class="small">${num(p.missions_completed)} missions • ${num(p.reputation)} reputation</p></div>
+    <div class="card s7"><div class="eyebrow">Qualification Path</div><h2>Your Ratings</h2>${milestones.map(([code,name,owned,desc])=>`<div class="historyrow"><div><b>${esc(name)}</b><div class="small">${esc(code)} • ${esc(desc)}</div></div><div class="${owned ? "owned" : "small"}">${owned ? "● ACTIVE" : "LOCKED"}</div></div>`).join("")}</div>
+    <div class="card s5"><div class="eyebrow">Aircraft Path</div><h2>Current Hangar</h2>${aircraft.length ? aircraft.map(x=>`<div class="historyrow"><div><b>${esc(x)}</b></div><div class="owned">OWNED</div></div>`).join("") : '<p class="small">No aircraft assigned.</p>'}<p class="copy">New aircraft become useful when your qualifications and level support them.</p></div>
+    <div class="card s12"><div class="eyebrow">20-Level Career Ladder</div><h2>Where you're going</h2>${levelRows.map((r,i)=>`<div class="historyrow"><div><b>Level ${r[0]} • ${esc(r[1])}</b><div class="small">${esc(r[2])}</div></div><div class="${Number(r[0])===current ? "owned" : "small"}">${Number(r[0])===current ? "CURRENT" : Number(r[0])<current ? "COMPLETED" : "LOCKED"}</div></div>`).join("")}</div>
+  </div>`;
 }
 function pilot() {
   const p = state.profile || {};
