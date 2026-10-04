@@ -401,7 +401,7 @@ function hangar() {
       <div class="small">${esc(a.category)} • ${esc(a.engine_type || "—")} • ${Number(a.engines || 1)} engine${Number(a.engines || 1) === 1 ? "" : "s"} • ${Number(a.seats || 0)} seats</div>
       <div class="details"><div class="detail"><div class="label">Required Level</div><strong>${num(a.required_level || 1)}</strong></div><div class="detail"><div class="label">Qualification</div><strong>${esc(qualification)}</strong></div></div>
       <div class="price">${price ? `${num(price)} Cr` : "Starter aircraft"}</div>
-      <div class="small">${owned ? "Available for eligible missions." : unlockable ? "You meet the current level and qualification requirements. Purchase/unlock integration comes next." : `Reach Level ${num(a.required_level || 1)} and earn ${esc(qualification)} to unlock.`}</div>
+      <div class="small">${owned ? "Available for eligible missions." : unlockable ? "You meet the current level and qualification requirements. Purchase/unlock integration comes next." : `Reach Level ${num(a.required_level || 1)} and earn ${esc(qualification)} to unlock.`}</div>\n      ${unlockable ? `<button class="action primary" data-action="purchase-aircraft" data-aircraft="${esc(a.id)}">Purchase Aircraft</button>` : ""}
     </div>`;
   });
   return `<section class="hero"><div><div class="eyebrow">Aircraft Hangar</div><h1>Build your hangar.</h1><p>Aircraft progress from locked → unlockable → owned as your career develops.</p></div><div><div class="label">Owned Aircraft</div><div class="money">${ownedIds.size}</div></div></section>
@@ -540,6 +540,9 @@ function bind() {
     render();
   });
   $('[data-action="save-profile"]')?.addEventListener("click", saveProfile);
+  $("#app").querySelectorAll('[data-action="purchase-aircraft"]').forEach((b) =>
+    b.addEventListener("click", () => purchaseAircraft(b.dataset.aircraft)),
+  );
 }
 async function login() {
   if (!sb) return;
@@ -662,6 +665,25 @@ async function complete() {
     state.submitting = false;
     err(e, "Mission completion failed. No rewards were applied.");
     render();
+  }
+}
+async function purchaseAircraft(aircraftId) {
+  try {
+    const aircraft = state.aircraftCatalog.find((a) => a.id === aircraftId);
+    if (!aircraft) throw new Error("Aircraft is no longer available.");
+    if (state.aircraft.some((a) => a.aircraft_id === aircraftId)) throw new Error("You already own this aircraft.");
+    if (level() < Number(aircraft.required_level || 1)) throw new Error(`Level ${aircraft.required_level || 1} is required.`);
+    if (aircraft.required_qualification_id && !qIds().has(aircraft.required_qualification_id)) throw new Error("Required qualification is not held.");
+    if (Number(state.profile?.credits || 0) < Number(aircraft.purchase_price || 0)) throw new Error("Insufficient credits.");
+    if (!confirm(`Purchase ${aircraft.manufacturer} ${aircraft.model} for ${num(aircraft.purchase_price)} Cr?`)) return;
+    const result = await sb.rpc("purchase_aircraft", { p_aircraft_id: aircraftId });
+    if (result.error) throw result.error;
+    toast(`Aircraft purchased: ${aircraft.manufacturer} ${aircraft.model}`);
+    await load();
+    state.page = "hangar";
+    render();
+  } catch (e) {
+    err(e, "Aircraft purchase failed. No credits were deducted.");
   }
 }
 async function saveProfile() {
