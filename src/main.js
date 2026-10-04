@@ -788,7 +788,7 @@ async function complete() {
     const d = result.data;
     const earned = Array.isArray(d?.achievements) ? d.achievements : [];
     const newQuals = Array.isArray(d?.qualifications) ? d.qualifications : [];
-    toast(`${d?.mission_complete === false ? `Leg ${d.leg_number} complete • Next leg ${d.next_leg}: ${d.next_origin} → ${d.next_destination}` : "Flight recorded"}${d && d.credits != null ? ` • +${num(d.credits)} Cr, +${num(d.xp)} XP` : ""}${earned.length ? ` • ${earned.length} achievement${earned.length === 1 ? "" : "s"} earned` : ""}${newQuals.length ? ` • ${newQuals.length} new rating${newQuals.length === 1 ? "" : "s"}` : ""}.`);
+    toast(`${d?.mission_complete === false ? `Leg ${d.leg_number} complete • Next leg ${d.next_leg}: ${d.next_origin} → ${d.next_destination}` : "Flight recorded"}${d && d.credits != null ? ` • +${num(d.credits)} Cr, +${num(d.xp)} XP` : ""}${d && d.performance_score != null ? ` • Flight Score ${num(d.performance_score)}/100` : ""}${earned.length ? ` • ${earned.length} achievement${earned.length === 1 ? "" : "s"} earned` : ""}${newQuals.length ? ` • ${newQuals.length} new rating${newQuals.length === 1 ? "" : "s"}` : ""}.`);
     state.submitting = false;
     state.report = {
       outcome: "successful",
