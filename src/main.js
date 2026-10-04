@@ -99,56 +99,129 @@ function nav() {
 }
 async function load() {
   if (!sb || !state.session) return;
+
   const uid = state.session.user.id;
-  const queries = await Promise.all([
+
+  const base = await Promise.all([
     sb.from("pilot_profiles").select("*").eq("id", uid).maybeSingle(),
-    sb
-      .from("pilot_qualifications")
-      .select("*, qualifications(*)")
-      .eq("pilot_id", uid),
-    sb
-      .from("pilot_aircraft")
-      .select("*, aircraft_master(*)")
-      .eq("pilot_id", uid),
-    sb
-      .from("missions")
-      .select(
-        "*, aircraft_master(*), required_qualification:qualifications(*)",
-      ),
-    sb
-      .from("active_missions")
-      .select(
-        "*, missions(*, aircraft_master(*), required_qualification:qualifications(*))",
-      )
-      .eq("pilot_id", uid)
-      .maybeSingle(),
+    sb.from("pilot_qualifications").select("*").eq("pilot_id", uid),
+    sb.from("pilot_aircraft").select("*").eq("pilot_id", uid),
+    sb.from("missions").select("*"),
+    sb.from("active_missions").select("*").eq("pilot_id", uid).maybeSingle(),
     sb
       .from("flight_reports")
-      .select("*, missions(*), aircraft_master(*)")
+      .select("*")
       .eq("pilot_id", uid)
       .order("created_at", { ascending: false })
       .limit(30),
   ]);
-  const bad = queries.find((x) => x.error);
+
+  const bad = base.find((x) => x.error);
+
   if (bad) {
     err(bad.error, "Could not load your career.");
     return;
   }
-  [
-    state.profile,
-    state.qualifications,
-    state.aircraft,
-    state.missions,
-    state.active,
-    state.history,
-  ] = queries.map(
-    (x) => x.data || (x === queries[0] || x === queries[4] ? null : []),
+
+  const [
+    profile,
+    pilotQualifications,
+    pilotAircraft,
+    missionsData,
+    activeData,
+    historyData,
+  ] = base.map((x) => x.data || []);
+
+  const qualificationIds = [
+    ...new Set([
+      ...pilotQualifications.map((x) => x.qualification_id).filter(Boolean),
+      ...missionsData
+        .map((x) => x.required_qualification_id)
+        .filter(Boolean),
+    ]),
+  ];
+
+  const aircraftIds = [
+    ...new Set([
+      ...pilotAircraft.map((x) => x.aircraft_id).filter(Boolean),
+      ...missionsData.map((x) => x.required_aircraft_id).filter(Boolean),
+      ...historyData.map((x) => x.aircraft_id).filter(Boolean),
+    ]),
+  ];
+
+  const lookups = await Promise.all([
+    qualificationIds.length
+      ? sb.from("qualifications").select("*").in("id", qualificationIds)
+      : Promise.resolve({ data: [], error: null }),
+
+    aircraftIds.length
+      ? sb.from("aircraft_master").select("*").in("id", aircraftIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const lookupError = lookups.find((x) => x.error);
+
+  if (lookupError) {
+    err(lookupError.error, "Could not load your aircraft and qualifications.");
+    return;
+  }
+
+  const qualificationMap = new Map(
+    (lookups[0].data || []).map((x) => [x.id, x]),
   );
-  if (!state.profile)
+
+  const aircraftMap = new Map(
+    (lookups[1].data || []).map((x) => [x.id, x]),
+  );
+
+  const qualifications = pilotQualifications.map((x) => ({
+    ...x,
+    qualifications: qualificationMap.get(x.qualification_id) || null,
+  }));
+
+  const aircraft = pilotAircraft.map((x) => ({
+    ...x,
+    aircraft_master: aircraftMap.get(x.aircraft_id) || null,
+  }));
+
+  const missions = missionsData.map((x) => ({
+    ...x,
+    aircraft_master: aircraftMap.get(x.required_aircraft_id) || null,
+    required_qualification:
+      qualificationMap.get(x.required_qualification_id) || null,
+  }));
+
+  const active =
+    activeData && !Array.isArray(activeData) ? activeData : null;
+
+  const activeMission = active
+    ? missions.find((x) => x.id === active.mission_id) || null
+    : null;
+
+  if (active && activeMission) {
+    active.missions = activeMission;
+    active.aircraft_master = activeMission.aircraft_master;
+  }
+
+  const history = historyData.map((x) => ({
+    ...x,
+    aircraft_master: aircraftMap.get(x.aircraft_id) || null,
+    missions: missionsData.find((m) => m.id === x.mission_id) || null,
+  }));
+
+  state.profile = profile;
+  state.qualifications = qualifications;
+  state.aircraft = aircraft;
+  state.missions = missions;
+  state.active = active;
+  state.history = history;
+
+  if (!state.profile) {
     toast(
       "Your pilot profile is still being created. Reload in a moment.",
       true,
     );
+  }
 }
 function qIds() {
   return new Set(
