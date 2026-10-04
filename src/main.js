@@ -98,6 +98,22 @@ function epaulet(lvl = level()) {
 function missionTitle(m) {
   return m.title || m.name || m.mission_id || "Mission";
 }
+function missionListText(value, fallback) {
+  if (Array.isArray(value)) {
+    const items = value.map((x) => typeof x === "string" ? x : x?.text || x?.name || "").filter(Boolean);
+    return items.length ? items.join(" • ") : fallback;
+  }
+  if (value && typeof value === "object") {
+    const items = Object.values(value).filter((x) => typeof x === "string" && x.trim());
+    return items.length ? items.join(" • ") : fallback;
+  }
+  return value ? String(value) : fallback;
+}
+function missionWeather(m) {
+  return String(m.weather_requirement || "").toUpperCase() === "LIVE_WEATHER"
+    ? "Live Weather required"
+    : (m.weather_requirement || "Check current weather before departure");
+}
 function aircraftName(a) {
   const master = a.aircraft_master || a;
   return (
@@ -272,6 +288,17 @@ async function load() {
     aircraft_master: aircraftMap.get(x.required_aircraft_id) || null,
     required_qualification:
       qualificationMap.get(x.required_qualification_id) || null,
+    hazards_text: missionListText(
+      x.hazards,
+      x.mission_type === "SCENIC" || x.template_id?.includes("SCENIC")
+        ? "Terrain, traffic, weather and destination conditions."
+        : "Terrain, weather, traffic, runway and destination conditions.",
+    ),
+    references_text: missionListText(
+      x.reference_items,
+      "Review current MSFS airport information, navigation data and applicable procedures.",
+    ),
+    weather_text: missionWeather(x),
   }));
 
   const active =
@@ -421,9 +448,9 @@ function brief() {
     </div>
     <div class="eyebrow">02 • Route & Flight Planning</div><p class="copy">${esc(m.route_guidance || m.planning_notes || "Plan the flight in MSFS 2024 Free Flight. Verify the route, altitude, fuel, weather, and destination conditions before departure.")}</p>
     <div class="callout"><b>Planning level:</b> ${esc(planning)}<br><b>FlightOps role:</b> ${planning === "Suggested planning" ? "Use the suggested guidance or plan your own route." : "FlightOps provides the mission requirements; the pilot is responsible for the final flight plan."}</div><div class="callout"><b>WEATHER REQUIREMENT:</b> LIVE WEATHER REQUIRED<br><span class="small">Fly this mission in MSFS 2024 using Live Weather. Custom or preset weather is not permitted for FlightOps missions.</span></div>
-    <div class="eyebrow">03 • Charts & References</div><p class="copy">Use the current MSFS airport information, navigation data, charts, and procedures available to you before departure.</p></div>
-    <div class="card s4"><div class="eyebrow">04 • Operational Conditions</div><h2>Before You Fly</h2><p class="copy">${esc(m.weather_notes || "Check current weather, winds, visibility, runway conditions, and operational considerations in your available references.")}</p>
-      <div class="eyebrow">05 • Route Hazards</div><p class="copy">${esc(m.hazards || m.operational_notes || "Review terrain, weather, traffic, runway length, and destination conditions appropriate to the aircraft.")}</p>
+    <div class="eyebrow">03 • Charts & References</div><p class="copy">${esc(m.references_text || "Use the current MSFS airport information, navigation data, charts, and procedures available to you before departure.")}</p></div>
+    <div class="card s4"><div class="eyebrow">04 • Operational Conditions</div><h2>Before You Fly</h2><p class="copy">${esc(m.weather_text || m.weather_notes || "Check current weather, winds, visibility, runway conditions, and operational considerations.")}</p>
+      <div class="eyebrow">05 • Route Hazards</div><p class="copy">${esc(m.hazards_text || "Review terrain, weather, traffic, runway length, and destination conditions appropriate to the aircraft.")}</p>
       <div class="eyebrow">06 • Things to Watch</div><p class="copy">${esc(m.watch_items || "Fly the aircraft within its normal operating limits. Reassess the plan if conditions change.")}</p></div>
     <div class="card s8"><div class="eyebrow">07 • Pilot Responsibilities</div><h2>Your Job</h2><p class="copy">You fly the aircraft in MSFS 2024 Free Flight. FlightOps does not control the simulator or provide automatic telemetry. <b>Live Weather is required.</b> Complete the mission manually, then return here for the debrief.</p>
       <div class="callout"><b>Mission Objective:</b> ${esc(m.objective || m.mission_objective || "Complete the assigned route safely and accomplish the mission objective.")}</div></div>
