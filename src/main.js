@@ -86,7 +86,8 @@ function pilotRank(lvl = level()) {
   if (n === 19) return { title: "Master Captain", stripes: 4, stars: 3 };
   return { title: "FlightOps Command Pilot", stripes: 4, stars: 0, command: true };
 }
-function epaulet(lvl = level()) {\n  ensureEpauletStyle();
+function epaulet(lvl = level()) {
+  ensureEpauletStyle();
   const r = pilotRank(lvl);
   const stripes = Array.from({ length: r.stripes }, () => '<span class="epaulet-stripe"></span>').join("");
   const stars = Array.from({ length: r.stars }, () => '<span class="epaulet-star">★</span>').join("");
