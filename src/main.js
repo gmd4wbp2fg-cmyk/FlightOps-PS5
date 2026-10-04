@@ -574,7 +574,7 @@ function brief() {
         <div class="detail"><div class="label">1</div><strong>Verify aircraft</strong><div class="small">Use the assigned/eligible aircraft in MSFS.</div></div>
         <div class="detail"><div class="label">2</div><strong>Build the flight plan</strong><div class="small">Route, altitude, fuel, alternate and navigation.</div></div>
         <div class="detail"><div class="label">3</div><strong>Set Live Weather</strong><div class="small">Preset/custom weather is not permitted.</div></div>
-        <div class="detail"><div class="label">4</div><strong>Set Weight & Balance</strong><div class="small">Load the mission payload and verify CG / takeoff weight in MSFS.</div></div>
+        <div class="detail"><div class="label">4</div><strong>Load Mission Payload</strong><div class="small">Use the FlightOps manifest to set the actual passenger/cargo load in MSFS Weight & Balance.</div></div>
         <div class="detail"><div class="label">5</div><strong>Fly the mission</strong><div class="small">Use normal operating procedures and sound judgment.</div></div>
         <div class="detail"><div class="label">6</div><strong>Debrief honestly</strong><div class="small">Report outcome, landing, weather, aircraft condition and objective.</div></div>
       </div>
