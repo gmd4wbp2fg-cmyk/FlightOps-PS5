@@ -27,6 +27,7 @@ const state = {
   profile: null,
   qualifications: [],
   aircraft: [],
+  aircraftCatalog: [],
   missions: [],
   active: null,
   history: [],
@@ -183,9 +184,7 @@ async function load() {
     qualificationIds.length
       ? sb.from("qualifications").select("*").in("id", qualificationIds)
       : Promise.resolve({ data: [], error: null }),
-    aircraftIds.length
-      ? sb.from("aircraft_master").select("*").in("id", aircraftIds)
-      : Promise.resolve({ data: [], error: null }),
+    sb.from("aircraft_master").select("*").eq("active", true).order("required_level", { ascending: true }),
   ]);
 
   const qualificationLookup = lookups[0];
@@ -205,9 +204,8 @@ async function load() {
   const qualificationMap = new Map(
     (qualificationLookup.data || []).map((x) => [x.id, x]),
   );
-  const aircraftMap = new Map(
-    (aircraftLookup.data || []).map((x) => [x.id, x]),
-  );
+  const aircraftCatalog = aircraftLookup.data || [];
+  const aircraftMap = new Map(aircraftCatalog.map((x) => [x.id, x]));
 
   const qualifications = pilotQualifications.map((x) => ({
     ...x,
@@ -252,6 +250,7 @@ async function load() {
   state.profile = profile;
   state.qualifications = qualifications;
   state.aircraft = aircraft;
+  state.aircraftCatalog = aircraftCatalog;
   state.missions = missions;
   state.active = active;
   state.history = history;
@@ -386,7 +385,28 @@ function brief() {
   </div>`;
 }
 function hangar() {
-  return `<section class="hero"><div><div class="eyebrow">Virtual Hangar</div><h1>Your aircraft.</h1><p>Ownership is loaded from your FlightOps career record.</p></div></section><div class="fleet">${state.aircraft.length ? state.aircraft.map((a) => `<div class="plane"><div class="owned">● OWNED</div><h3>${esc(aircraftName(a))}</h3><div class="small">${esc(a.aircraft_master?.category || a.aircraft_master?.role || "Aircraft")}</div></div>`).join("") : '<div class="notice">No aircraft are available yet. New pilots receive the C172 through the backend starter trigger.</div>'}</div>`;
+  const ownedIds = new Set(state.aircraft.map((a) => a.aircraft_id));
+  const qualSet = qIds();
+  const cards = state.aircraftCatalog.map((a) => {
+    const owned = ownedIds.has(a.id);
+    const hasQualification = !a.required_qualification_id || qualSet.has(a.required_qualification_id);
+    const hasLevel = level() >= Number(a.required_level || 1);
+    const unlockable = !owned && hasQualification && hasLevel;
+    const status = owned ? "OWNED" : unlockable ? "UNLOCKABLE" : "LOCKED";
+    const qualification = a.required_qualification_id || "—";
+    const price = Number(a.purchase_price || 0);
+    return `<div class="plane ${status === "LOCKED" ? "locked" : ""}">
+      <div class="${status === "OWNED" ? "owned" : status === "UNLOCKABLE" ? "reward" : "small"}">${status === "OWNED" ? "● OWNED" : status === "UNLOCKABLE" ? "◆ UNLOCKABLE" : "🔒 LOCKED"}</div>
+      <h3>${esc(a.manufacturer)} ${esc(a.model)}</h3>
+      <div class="small">${esc(a.category)} • ${esc(a.engine_type || "—")} • ${Number(a.engines || 1)} engine${Number(a.engines || 1) === 1 ? "" : "s"} • ${Number(a.seats || 0)} seats</div>
+      <div class="details"><div class="detail"><div class="label">Required Level</div><strong>${num(a.required_level || 1)}</strong></div><div class="detail"><div class="label">Qualification</div><strong>${esc(qualification)}</strong></div></div>
+      <div class="price">${price ? `${num(price)} Cr` : "Starter aircraft"}</div>
+      <div class="small">${owned ? "Available for eligible missions." : unlockable ? "You meet the current level and qualification requirements. Purchase/unlock integration comes next." : `Reach Level ${num(a.required_level || 1)} and earn ${esc(qualification)} to unlock.`}</div>
+    </div>`;
+  });
+  return `<section class="hero"><div><div class="eyebrow">Aircraft Hangar</div><h1>Build your hangar.</h1><p>Aircraft progress from locked → unlockable → owned as your career develops.</p></div><div><div class="label">Owned Aircraft</div><div class="money">${ownedIds.size}</div></div></section>
+  <div class="grid"><div class="card s12"><div class="eyebrow">Hangar Status</div><h2>Owned • Unlockable • Locked</h2><p class="copy">Owned aircraft are available for eligible missions. Unlockable aircraft meet your current level and qualification requirements. Locked aircraft remain visible so you can see what you're working toward.</p></div></div>
+  <div class="fleet">${cards.length ? cards.join("") : '<div class="notice">No aircraft are currently in the FlightOps catalog.</div>'}</div>`;
 }
 function career() {
   const p = state.profile || {};
