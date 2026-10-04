@@ -627,28 +627,41 @@ function pilot() {
 }
 function report() {
   const m = state.active?.missions || state.active;
-  if (!m) {
-    state.page = "home";
-    return home();
-  }
-  const choice = (field, values) =>
-    `<div class="fleet">${values.map(([v, l]) => `<button class="plane choice ${state.report[field] === v ? "selected" : ""}" data-choice="${field}" data-value="${v}"><b>${l}</b></button>`).join("")}</div>`;
-  return `<section class="hero"><div><div class="eyebrow">Flight Debrief</div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><h1>${esc(missionTitle(m))}</h1><p>${esc(route(m))} • ${legDisplay(m, state.active?.current_leg).count > 1 ? `Leg ${legDisplay(m, state.active?.current_leg).current} of ${legDisplay(m, state.active?.current_leg).count} • ` : ""}${esc(legDisplay(m, state.active?.current_leg).leg.origin_icao)} → ${esc(legDisplay(m, state.active?.current_leg).leg.destination_icao)} • Tell FlightOps what happened.</p></div>${epaulet()}</div></div></section><div class="card"><h3>Outcome</h3>${choice(
-    "outcome",
-    [
-      ["successful", "Successful"],
-      ["rough", "Rough Flight"],
-      ["failed", "Mission Failed"],
-    ],
-  )}<h3>Landing</h3>${choice("landing", [
-    ["good", "Good"],
-    ["hard", "Hard"],
-    ["go_around", "Go-around"],
-  ])}<h3>Aircraft condition</h3>${choice("condition", [
-    ["no_issues", "No Damage"],
-    ["minor_issue", "Minor issue"],
-    ["significant_damage", "Significant damage"],
-  ])}<h3>Weather encountered</h3>${choice("weather", [["clear","Clear / VMC"],["wind","Strong Winds"],["rain","Rain"],["low_visibility","Low Visibility"],["imc","IMC"],["turbulence","Turbulence"],["storms","Storms"]])}<div class="callout"><b>LIVE WEATHER CONFIRMATION</b><br><label class="small"><input id="live-weather-confirm" type="checkbox"> I confirm this mission was flown in MSFS 2024 using Live Weather.</label></div><h3>Leg Objective</h3><div class="callout"><b>${esc(legDisplay(m, state.active?.current_leg).leg.leg_objective || m.objective || "Complete the assigned stop objective safely.")}</b><br><span class="small">This result affects mission pay, XP, and reputation.</span></div>${choice("objective", [ ["completed", "Completed"], ["partial", "Partial"], ["not_completed", "Not completed"] ])})}<div class="details"><label class="detail"><span class="label">Flight time</span><input id="flight-minutes" type="number" min="0" step="1" inputmode="numeric" placeholder="Minutes"></label><label class="detail"><span class="label">Distance</span><input id="distance-nm" type="number" min="0" step="1" inputmode="numeric" placeholder="NM"></label></div><label class="label" for="notes">Notable event / pilot notes</label><textarea id="notes" placeholder="Optional operational notes">${esc(state.report.notes)}</textarea><br><button class="action primary" data-action="complete" ${state.submitting ? "disabled" : ""}>${state.submitting ? "Submitting…" : (legDisplay(m, state.active?.current_leg).count > 1 ? `Submit Leg ${legDisplay(m, state.active?.current_leg).current} Report` : "Submit Flight Report")}</button></div>`;
+  if (!m) { state.page = "home"; return home(); }
+  const d = legDisplay(m, state.active?.current_leg);
+  const choice = (field, values) => `<div class="fleet">${values.map(([v,l]) => `<button class="plane choice ${state.report[field]===v?"selected":""}" data-choice="${field}" data-value="${v}"><b>${l}</b></button>`).join("")}</div>`;
+  const legObj = d.leg.leg_objective || m.objective || "Complete the assigned stop objective safely.";
+  return `<section class="hero"><div><div class="eyebrow">Flight Operations • Post-Flight Debrief</div><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="ops-route-chip"><span class="ops-dot"></span> DEBRIEF</span><span class="ops-route-chip">LEG ${d.current}/${d.count}</span><span class="ops-route-chip">LIVE WEATHER</span></div><h1>${esc(missionTitle(m))}</h1><p>${esc(d.leg.origin_icao)} → ${esc(d.leg.destination_icao)} • Record the flight honestly and accurately.</p></div></section>
+  <div class="grid">
+    <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">01 • Flight Outcome</div><h2>How did the flight go?</h2></div><div class="ops-icon">✓</div></div>
+      <div class="label">Overall outcome</div>${choice("outcome",[["successful","Successful"],["rough","Rough Flight"],["failed","Mission Failed"]])}
+      <div class="label">Landing performance</div>${choice("landing",[["good","Good"],["hard","Hard"],["go_around","Go-around"]])}
+      <div class="label">Aircraft condition</div>${choice("condition",[["no_issues","No Damage"],["minor_issue","Minor Issue"],["significant_damage","Significant Damage"]])}
+      <div class="label">Weather encountered</div>${choice("weather",[["clear","Clear / VMC"],["wind","Strong Winds"],["rain","Rain"],["low_visibility","Low Visibility"],["imc","IMC"],["turbulence","Turbulence"],["storms","Storms"]])}
+    </div>
+    <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">02 • Flight Record</div><h2>Log the actual flight</h2></div><div class="ops-icon">✈</div></div>
+      <label class="detail"><span class="label">Flight time</span><input id="flight-minutes" type="number" min="0" step="1" inputmode="numeric" placeholder="Minutes"></label>
+      <label class="detail"><span class="label">Distance flown</span><input id="distance-nm" type="number" min="0" step="1" inputmode="numeric" placeholder="NM"></label>
+      <p class="small">Enter the actual time and distance shown by your MSFS flight, not the mission estimate.</p>
+    </div>
+    <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">03 • Mission Objective</div><h2>Was the objective completed?</h2></div><div class="ops-route-chip">MISSION STANDARD</div></div>
+      <div class="callout"><b>Assigned objective:</b><br>${esc(legObj)}<br><span class="small">This result directly affects mission pay, XP, reputation and whether the mission advances.</span></div>
+      ${choice("objective",[["completed","Completed"],["partial","Partial"],["not_completed","Not Completed"]])}
+    </div>
+    <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">04 • Weather Verification</div><h2>Live Weather</h2></div><div class="ops-icon">☁</div></div>
+      <div class="notice"><b>REQUIRED</b><br>FlightOps missions must be flown using MSFS 2024 Live Weather.</div>
+      <label class="small"><input id="live-weather-confirm" type="checkbox"> I confirm this mission was flown in MSFS 2024 using Live Weather.</label>
+    </div>
+    <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">05 • Pilot Report</div><h2>Operational Notes</h2></div><div class="ops-route-chip">PILOT REPORT</div></div>
+      <label class="label" for="notes">Notable event / pilot notes</label><textarea id="notes" placeholder="Record weather, diversions, passenger/cargo issues, go-arounds, abnormal events, or anything FlightOps should know.">${esc(state.report.notes)}</textarea>
+    </div>
+    <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">06 • Submission Review</div><h2>Before you file the report</h2></div><div class="ops-icon">◆</div></div>
+      <div class="details"><div class="detail"><div class="label">Mission</div><strong>${esc(missionTitle(m))}</strong></div><div class="detail"><div class="label">Aircraft</div><strong>${esc(aircraftName(m.aircraft_master || m))}</strong></div><div class="detail"><div class="label">Route</div><strong>${esc(d.leg.origin_icao)} → ${esc(d.leg.destination_icao)}</strong></div><div class="detail"><div class="label">Leg</div><strong>${d.current} / ${d.count}</strong></div></div>
+      <p class="small">FlightOps will calculate the final credits, XP, reputation and performance score after submission.</p>
+      <button class="action primary" data-action="complete" ${state.submitting ? "disabled" : ""}>${state.submitting ? "Filing Report…" : (d.count > 1 ? `File Leg ${d.current} Flight Report` : "File Flight Report")}</button>
+    </div>
+    <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">07 • Dispatch Result</div><h2>${d.count > 1 && d.current < d.count ? "Next Leg" : "Mission Completion"}</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> PENDING</div></div><p class="copy">${d.count > 1 && d.current < d.count ? "A successful submission advances the dispatch to the next leg. An incomplete objective still advances with reduced rewards." : "Final mission rewards are calculated after the report is accepted."}</p></div>
+  </div>`;
 }
 function auth() {
   return `<section class="hero"><div><div class="eyebrow">Pilot Career</div><h1>Sign in to FlightOps.</h1><p>Your career progression is stored securely in Supabase, not in this browser.</p></div></section><div class="card"><div class="form"><label class="label">Email<input id="email" type="email" autocomplete="email" required></label><label class="label">Password<input id="password" type="password" autocomplete="current-password" required minlength="6"></label><div class="eyebrow">New Pilot Account</div><p class="small">Set your home base. Your career mission geography will grow outward from this airport as you level up.</p><label class="label">Pilot name (new accounts)<input id="pilot-name" maxlength="50" autocomplete="name"></label><label class="label">Callsign (new accounts)<input id="callsign" maxlength="30" autocomplete="nickname"></label><label class="label">Home base airport ICAO (new accounts)<input id="home-base-icao" maxlength="4" minlength="4" autocapitalize="characters" autocomplete="off" placeholder="Example: KCHA" required></label><div class="small">Use the four-letter ICAO code for your home airport. FlightOps uses it as the starting point for your mission geography.</div><div><button class="action primary" data-action="login" ${configured ? "" : "disabled"}>Login</button> <button class="action" data-action="signup" ${configured ? "" : "disabled"}>Create Account</button></div>${configured ? "" : '<div class="notice">Deployment configuration is incomplete. Set <b>VITE_SUPABASE_URL</b> and <b>VITE_SUPABASE_PUBLISHABLE_KEY</b> before using FlightOps.</div>'}</div></div>`;
