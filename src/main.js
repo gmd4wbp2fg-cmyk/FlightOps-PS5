@@ -79,7 +79,7 @@ function epaulet(lvl = level()) {
   const stripes = Array.from({ length: r.stripes }, () => '<span class="epaulet-stripe"></span>').join("");
   const stars = Array.from({ length: r.stars }, () => '<span class="epaulet-star">★</span>').join("");
   const command = r.command ? '<span class="epaulet-command">◆</span>' : "";
-  return '<div class="epaulet-wrap" title="FlightOps career rank"><div class="epaulet" aria-label="' + esc(r.title) + ', Level ' + lvl + '">' + stripes + stars + command + '</div><div><div class="label">Rank</div><strong>' + esc(r.title) + '</strong><div class="small">Level ' + lvl + '</div></div></div>';
+  return '<div class="epaulet-wrap" title="FlightOps career rank"><div class="epaulet-board" aria-label="' + esc(r.title) + ', Level ' + lvl + '"><div class="epaulet-tip"></div><div class="epaulet-band">' + stripes + '</div><div class="epaulet-insignia">' + stars + command + '</div></div><div><div class="label">Rank</div><strong>' + esc(r.title) + '</strong><div class="small">Level ' + lvl + '</div></div></div>';
 }
 function missionTitle(m) {
   return m.title || m.name || m.mission_id || "Mission";
