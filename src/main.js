@@ -544,7 +544,7 @@ function career() {
     const missions = Number(p.completed_missions || 0);
     const minutes = Number(p.total_flight_minutes || 0);
     const nm = Number(p.total_nm || 0);
-    const targets = { FIRST_FLIGHT:[flights,1], FIRST_MISSION:[missions,1], TEN_FLIGHTS:[flights,10], TEN_MISSIONS:[missions,10], FIRST_TURBOPROP:[qual.includes("TURBOPROP")?1:0,1], FIRST_JET:[qual.includes("JET")?1:0,1], TEN_HOURS:[minutes,600], THOUSAND_NM:[nm,1000], TWENTY_FIVE_FLIGHTS:[flights,25], TWENTY_FIVE_MISSIONS:[missions,25], LEVEL_10:[current,10], LEVEL_20:[current,20] };
+    const targets = { FIRST_FLIGHT:[flights,1], FIRST_MISSION:[missions,1], TEN_FLIGHTS:[flights,10], TEN_MISSIONS:[missions,10], FIRST_TURBOPROP:[qual.includes("TURBOPROP")?1:0,1], FIRST_JET:[qual.includes("JET")?1:0,1], TEN_HOURS:[minutes,600], THOUSAND_NM:[nm,1000], TWENTY_FIVE_FLIGHTS:[flights,25], TWENTY_FIVE_MISSIONS:[missions,25], LEVEL_10:[current,10], LEVEL_20:[current,20], EXCELLENT_FLIGHT:[avgScore || 0,90], PERFECT_FLIGHT:[bestScore || 0,100] };
     const t = targets[id];
     if (!t) return "";
     return t[0] >= t[1] ? "EARNED" : id === "TEN_HOURS" ? `${Math.floor(t[0]/60)} / 10h` : id === "THOUSAND_NM" ? `${num(t[0])} / 1,000 NM` : `${num(t[0])} / ${num(t[1])}`;
