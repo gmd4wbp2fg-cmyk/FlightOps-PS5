@@ -587,7 +587,7 @@ function hangar() {
     </div>`;
   });
   return `<section class="hero"><div><div class="eyebrow">Aircraft Hangar</div><h1>Build your hangar.</h1><p>Aircraft progress from locked → unlockable → owned as your career develops.</p></div><div><div class="label">Owned Aircraft</div><div class="money">${ownedIds.size}</div></div></section>
-  <div class="grid"><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Hangar Status</div><h2>Fleet Command</h2></div><div class="ops-icon">◈</div></div><h2>Owned • Unlockable • Locked</h2><p class="copy">Owned aircraft are available for eligible missions. Unlockable aircraft meet your current level and qualification requirements. Locked aircraft remain visible so you can see what you're working toward.</p></div></div>
+  <div class="grid"><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Hangar Status</div><h2>Aircraft Status</h2></div><div class="ops-icon">◈</div></div><div class="details"><div class="detail"><div class="label">OWNED</div><strong>Ready to Fly</strong><div class="small">Available for eligible missions.</div></div><div class="detail"><div class="label">UNLOCKABLE</div><strong>Ready to Purchase</strong><div class="small">You meet the level and qualification requirements.</div></div><div class="detail"><div class="label">LOCKED</div><strong>Career Goal</strong><div class="small">Advance your level and qualifications to unlock it.</div></div></div></div></div>
   <div class="fleet">${cards.length ? cards.join("") : '<div class="notice">No aircraft are currently in the FlightOps catalog.</div>'}</div>`;
 }
 function career() {
