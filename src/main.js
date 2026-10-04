@@ -757,6 +757,14 @@ async function complete() {
     if (!$("#live-weather-confirm")?.checked)
       throw new Error("Confirm that Live Weather was used before submitting the flight.");
     state.report.notes = $("#notes")?.value || "";
+    const currentLegState = legDisplay(state.active, state.active?.current_leg);
+    if (state.report.objective === "not_completed") {
+      const isFinalLeg = currentLegState.current >= currentLegState.count;
+      const warning = isFinalLeg
+        ? "This final leg objective was not completed. The mission will close with reduced pay, XP, and reputation."
+        : "This leg objective was not completed. You will still advance, but this leg will pay reduced credits/XP and reputation.";
+      if (!confirm(warning + "\n\nSubmit this result?")) return;
+    }
     const weatherLabels = { clear: "Clear / VMC", wind: "Strong Winds", rain: "Rain", low_visibility: "Low Visibility", imc: "IMC", turbulence: "Turbulence", storms: "Storms" };
     const combinedNotes = "Weather encountered: " + (weatherLabels[state.report.weather] || "Not reported") + ". " + state.report.notes;
     state.report.flightMinutes = Math.max(0, Number($("#flight-minutes")?.value || 0));
