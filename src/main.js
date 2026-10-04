@@ -84,7 +84,7 @@ function route(m) {
 }
 function nav() {
   $("#nav").innerHTML = state.session
-    ? ["home", "missions", "hangar", "pilot"]
+    ? ["home", "missions", "active", "hangar", "pilot"]
         .map(
           (x) =>
             `<button data-page="${x}" class="${state.page === x ? "active" : ""}">${x[0].toUpperCase() + x.slice(1)}</button>`,
@@ -321,6 +321,26 @@ function activeMissionDetails(mission) {
 function loadNotice() {
   if (!state.loadErrors?.length) return "";
   return `<div class="notice"><b>Career data needs attention.</b><br>${esc(state.loadErrors.join(" • "))}</div>`;
+}
+function activeView() {
+  const m = activeMission();
+  if (!m) { state.page = "missions"; return missionList(); }
+  const a = m.aircraft_master || m;
+  return `<section class="hero"><div><div class="eyebrow">Active Mission • Dispatch</div><h1>${esc(missionTitle(m))}</h1><p>${esc(m.mission_code || m.id)} • ${esc(route(m))}</p></div><div><div class="label">Contract Value</div><div class="money">${num(m.reward_credits || m.credits)} Cr</div></div></section>
+  <div class="grid">
+    <div class="card s8"><div class="eyebrow">Mission Card</div><h2>Ready for departure</h2><div class="details">
+      <div class="detail"><div class="label">Aircraft</div><strong>${esc(aircraftName(a))}</strong></div>
+      <div class="detail"><div class="label">Route</div><strong>${esc(route(m))}</strong></div>
+      <div class="detail"><div class="label">Distance</div><strong>${esc(m.distance_nm || m.distance || "—")} NM</strong></div>
+      <div class="detail"><div class="label">Base XP</div><strong>+${num(m.reward_xp || m.xp)} XP</strong></div>
+    </div>
+    <div class="eyebrow">Flight Operations</div><div class="callout"><b>Objective:</b> ${esc(m.objective || m.mission_objective || "Complete the assigned route safely.")}<br><b>Planning:</b> ${esc(m.planning_level || "Pilot responsibility")}<br><b>Status:</b> ACTIVE — this contract is locked to your pilot.</div>
+    <p class="copy">Launch MSFS 2024 Free Flight and fly the mission. FlightOps does not control the simulator or collect automatic telemetry. When you land, return here and complete the debrief.</p>
+    <button class="action primary" data-action="report">Complete Mission / Debrief</button>
+    </div>
+    <div class="card s4"><div class="eyebrow">Pilot Checklist</div><h2>Before Pushback</h2><p class="copy">✓ Aircraft selected<br>✓ Route reviewed<br>✓ Weather checked<br>✓ Fuel and alternate considered<br>✓ Mission objective understood<br>✓ Fly within aircraft limitations</p><div class="eyebrow">Reward</div><h2>${num(m.reward_credits || m.credits)} Cr</h2><p class="small">Base XP +${num(m.reward_xp || m.xp)} XP. Final rewards are calculated after the debrief.</p></div>
+    <div class="card s12"><div class="eyebrow">Mission Flow</div><h2>Accept → Fly → Land → Debrief → Get Paid</h2><p class="copy">This mission remains active if you close Safari or leave FlightOps. You can return later and continue the career.</p></div>
+  </div>`;
 }
 function home() {
   const p = state.profile;
