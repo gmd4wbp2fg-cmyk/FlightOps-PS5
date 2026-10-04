@@ -697,7 +697,8 @@ async function complete() {
     ]);
     const d = result.data;
     const earned = Array.isArray(d?.achievements) ? d.achievements : [];
-    toast(`Flight recorded${d ? `: +${num(d.credits || d.credits_earned)} Cr, +${num(d.xp || d.xp_earned)} XP` : ""}${earned.length ? ` • ${earned.length} achievement${earned.length === 1 ? "" : "s"} earned` : ""}.`);
+    const newQuals = Array.isArray(d?.qualifications) ? d.qualifications : [];
+    toast(`Flight recorded${d ? `: +${num(d.credits || d.credits_earned)} Cr, +${num(d.xp || d.xp_earned)} XP` : ""}${earned.length ? ` • ${earned.length} achievement${earned.length === 1 ? "" : "s"} earned` : ""}${newQuals.length ? ` • ${newQuals.length} new rating${newQuals.length === 1 ? "" : "s"}` : ""}.`);
     state.submitting = false;
     state.report = {
       outcome: "successful",
