@@ -517,7 +517,7 @@ function report() {
     ["completed", "Completed"],
     ["partial", "Partial"],
     ["not_completed", "Not completed"],
-  ])}<label class="label" for="notes">Notable event / pilot notes</label><textarea id="notes" placeholder="Optional operational notes">${esc(state.report.notes)}</textarea><br><button class="action primary" data-action="complete" ${state.submitting ? "disabled" : ""}>${state.submitting ? "Submitting…" : "Submit Flight Report"}</button></div>`;
+  ])}<div class="details"><label class="detail"><span class="label">Flight time</span><input id="flight-minutes" type="number" min="0" step="1" inputmode="numeric" placeholder="Minutes"></label><label class="detail"><span class="label">Distance</span><input id="distance-nm" type="number" min="0" step="1" inputmode="numeric" placeholder="NM"></label></div><label class="label" for="notes">Notable event / pilot notes</label><textarea id="notes" placeholder="Optional operational notes">${esc(state.report.notes)}</textarea><br><button class="action primary" data-action="complete" ${state.submitting ? "disabled" : ""}>${state.submitting ? "Submitting…" : "Submit Flight Report"}</button></div>`;
 }
 function auth() {
   return `<section class="hero"><div><div class="eyebrow">Pilot Career</div><h1>Sign in to FlightOps.</h1><p>Your career progression is stored securely in Supabase, not in this browser.</p></div></section><div class="card"><div class="form"><label class="label">Email<input id="email" type="email" autocomplete="email" required></label><label class="label">Password<input id="password" type="password" autocomplete="current-password" required minlength="6"></label><label class="label">Pilot name (new accounts)<input id="pilot-name" maxlength="50"></label><label class="label">Callsign (new accounts)<input id="callsign" maxlength="30"></label><div><button class="action primary" data-action="login" ${configured ? "" : "disabled"}>Login</button> <button class="action" data-action="signup" ${configured ? "" : "disabled"}>Create Account</button></div>${configured ? "" : '<div class="notice">Deployment configuration is incomplete. Set <b>VITE_SUPABASE_URL</b> and <b>VITE_SUPABASE_PUBLISHABLE_KEY</b> before using FlightOps.</div>'}</div></div>`;
@@ -671,6 +671,8 @@ async function complete() {
     if (!state.active)
       throw new Error("There is no active mission to complete.");
     state.report.notes = $("#notes")?.value || "";
+    state.report.flightMinutes = Math.max(0, Number($("#flight-minutes")?.value || 0));
+    state.report.distanceNm = Math.max(0, Number($("#distance-nm")?.value || 0));
     state.submitting = true;
     render();
     const r = state.report,
@@ -682,8 +684,8 @@ async function complete() {
       p_objective_result: r.objective,
       p_notable_event: r.notes,
       p_notes: r.notes,
-      p_flight_minutes: null,
-      p_distance_nm: null,
+      p_flight_minutes: r.flightMinutes || null,
+      p_distance_nm: r.distanceNm || null,
     });
     if (result.error) throw result.error;
     const d = result.data;
@@ -697,6 +699,8 @@ async function complete() {
       condition: "no_issues",
       objective: "completed",
       notes: "",
+      flightMinutes: 0,
+      distanceNm: 0,
     };
     await load();
     state.page = "pilot";
