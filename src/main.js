@@ -403,7 +403,7 @@ function missionList() {
   const ms = missions().filter((m) => missionId(m) !== activeId);
   return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Mission Board</div><h1>Choose your next assignment.</h1><p>Browse available contracts. Your current flight is shown on the Active tab.</p></div><div><div class="label">Available Contracts</div><div class="money">${ms.length}</div></div></section>
   ${active ? `<div class="notice"><b>Active mission:</b> ${esc(missionTitle(active))} • ${esc(route(active))}. Complete it before accepting another contract. <button class="action primary" data-action="report">Complete Mission</button></div>` : ""}
-  <div class="grid"><div class="card s8">${ms.length ? ms.map((m) => `<div class="mission"><div><span class="tag">${esc(m.mission_code || m.id)}</span><span class="tag">${esc(m.mission_type || m.type || "MISSION")}</span><span class="tag">LIVE WEATHER</span>${m.region_id ? `<span class="tag">${esc(m.region_id)}</span>` : ""}<h3>${esc(missionTitle(m))}</h3><div class="route">${esc(route(m))} • ${esc(aircraftName(m.aircraft_master || m))}</div><div class="small">${esc(m.distance_nm || m.distance || "—")} NM • ${esc(m.difficulty || "STANDARD")} • ${esc(m.priority || "STANDARD")}</div><div class="small">${num(m.reward_credits || m.credits)} Cr • +${num(m.reward_xp || m.xp)} XP</div></div><button class="action primary" data-brief="${m.id}" ${state.active ? "disabled" : ""}>View Brief</button></div>`).join("") : '<p class="small">No missions currently meet your ownership, qualification, and level requirements.</p>'}</div><div class="card s4"><div class="eyebrow">Career Geography</div><h2>Grow your range.</h2><p class="copy">Your mission geography expands with your career. Early pilots stay close to home; higher levels open nationwide, North American, Caribbean, Central American, South American, European, African, Middle Eastern, and Asia-Pacific contracts.</p><div class="callout"><b>Career rule:</b> You only see missions you can actually fly with your aircraft, qualification, and level.</div></div></div>`;
+  <div class="grid"><div class="card s8">${ms.length ? ms.map((m) => `<div class="mission"><div><span class="tag">${esc(m.mission_code || m.id)}</span><span class="tag">${esc(m.mission_type || m.type || "MISSION")}</span><span class="tag">LIVE WEATHER</span>${m.region_id ? `<span class="tag">${esc(m.region_id)}</span>` : ""}<h3>${esc(missionTitle(m))}</h3><div class="route">${esc(route(m))} • ${esc(aircraftName(m.aircraft_master || m))}</div><div class="small">${esc(m.distance_nm || m.distance || "—")} NM • ${esc(m.difficulty || "STANDARD")} • ${esc(m.priority || "STANDARD")}</div><div class="small">${num(m.reward_credits || m.credits)} Cr • +${num(m.reward_xp || m.xp)} XP</div></div><button class="action primary" data-brief="${m.id}" ${state.active ? "disabled" : ""}>View Brief</button></div>`).join("") : '<p class="small">No missions currently meet your ownership, qualification, and level requirements.</p>'}</div><div class="card s4"><div class="eyebrow">Career Geography</div><h2>Grow your range.</h2><p class="copy">Your mission geography expands outward from your home base as your career grows. Early pilots stay close to home; higher levels open nationwide, North American, Caribbean, Central American, South American, European, African, Middle Eastern, and Asia-Pacific contracts.</p><div class="callout"><b>Career rule:</b> You only see missions you can actually fly with your aircraft, qualification, and level.</div></div></div>`;
 }
 function brief() {
   const m = state.selected;
@@ -504,7 +504,7 @@ function pilot() {
   const totalNm = flights.reduce((s, h) => s + Number(h.distance_nm || 0), 0);
   const successful = flights.filter((h) => String(h.outcome || "").toLowerCase() === "successful").length;
   const successRate = flights.length ? Math.round((successful / flights.length) * 100) : 0;
-  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Pilot Record</div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><h1>${esc(p.pilot_name || p.name || "Pilot")}</h1><p>${esc(p.callsign || "No callsign set")} • MSFS 2024 • PS5</p></div>${epaulet()}</div></div><button class="action" data-action="edit-profile">Edit profile</button></section><div class="grid"><div class="card s4"><div class="label">Level / XP</div><div class="stat">${level()} / ${num(p.xp)} XP</div></div><div class="card s4"><div class="label">Credits / Reputation</div><div class="stat">${num(p.credits)} Cr</div><div class="small">${num(p.reputation)} reputation</div></div><div class="card s4"><div class="label">Qualifications</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.name || x.qualifications?.code)).join("<br>") || "None"}</div></div><div class="card s12"><div class="eyebrow">Pilot Logbook</div><h2>${num(state.history.length)} Recent Flights</h2><div class="details"><div class="detail"><span class="label">Total Time</span><strong>${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m</strong></div><div class="detail"><span class="label">Total Distance</span><strong>${num(totalNm)} NM</strong></div><div class="detail"><span class="label">Successful</span><strong>${num(successRate)}%</strong></div></div>${state.history.length ? state.history.map((h) => `<div class="historyrow"><div><b>${esc(missionTitle(h.missions || h))}</b><div class="small">${esc(new Date(h.completed_at || h.created_at).toLocaleString())} • ${esc(aircraftName(h.aircraft_master || h))}</div><div class="small">${esc(route(h.missions || h))} • ${esc(h.outcome || "Recorded")} • Landing: ${esc(h.landing || h.landing_quality || "—")}</div><div class="small">Objective: ${esc(h.objective_result || h.objective || "—")} • Aircraft: ${esc(h.aircraft_condition || "—")}</div><div class="small">Flight time: ${h.flight_minutes ? `${Math.floor(Number(h.flight_minutes)/60)}h ${Number(h.flight_minutes)%60}m` : "—"} • Distance: ${h.distance_nm ? `${num(h.distance_nm)} NM` : "—"}</div></div><div style="text-align:right"><b class="owned">+${num(h.earned_credits || h.credits_earned || h.reward_credits)} Cr</b><div class="small">+${num(h.earned_xp || h.xp_earned || h.reward_xp)} XP</div><div class="small">Rep: ${num(h.earned_reputation || h.reputation_earned || 0)}</div></div></div>`).join("") : '<p class="small">Your completed flights will appear here.</p>'}</div></div>`;
+  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Pilot Record</div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><h1>${esc(p.pilot_name || p.name || "Pilot")}</h1><p>${esc(p.callsign || "No callsign set")} • MSFS 2024 • PS5</p></div>${epaulet()}</div></div><button class="action" data-action="edit-profile">Edit profile</button></section><div class="grid"><div class="card s4"><div class="label">Level / XP</div><div class="stat">${level()} / ${num(p.xp)} XP</div></div><div class="card s4"><div class="label">Credits / Reputation</div><div class="stat">${num(p.credits)} Cr</div><div class="small">${num(p.reputation)} reputation</div></div><div class="card s4"><div class="label">Home Base</div><div class="stat">${esc(p.home_base_icao || "Not set")}</div><div class="small">Mission geography expands from this airport as your career grows.</div></div><div class="card s4"><div class="label">Qualifications</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.name || x.qualifications?.code)).join("<br>") || "None"}</div></div><div class="card s12"><div class="eyebrow">Pilot Logbook</div><h2>${num(state.history.length)} Recent Flights</h2><div class="details"><div class="detail"><span class="label">Total Time</span><strong>${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m</strong></div><div class="detail"><span class="label">Total Distance</span><strong>${num(totalNm)} NM</strong></div><div class="detail"><span class="label">Successful</span><strong>${num(successRate)}%</strong></div></div>${state.history.length ? state.history.map((h) => `<div class="historyrow"><div><b>${esc(missionTitle(h.missions || h))}</b><div class="small">${esc(new Date(h.completed_at || h.created_at).toLocaleString())} • ${esc(aircraftName(h.aircraft_master || h))}</div><div class="small">${esc(route(h.missions || h))} • ${esc(h.outcome || "Recorded")} • Landing: ${esc(h.landing || h.landing_quality || "—")}</div><div class="small">Objective: ${esc(h.objective_result || h.objective || "—")} • Aircraft: ${esc(h.aircraft_condition || "—")}</div><div class="small">Flight time: ${h.flight_minutes ? `${Math.floor(Number(h.flight_minutes)/60)}h ${Number(h.flight_minutes)%60}m` : "—"} • Distance: ${h.distance_nm ? `${num(h.distance_nm)} NM` : "—"}</div></div><div style="text-align:right"><b class="owned">+${num(h.earned_credits || h.credits_earned || h.reward_credits)} Cr</b><div class="small">+${num(h.earned_xp || h.xp_earned || h.reward_xp)} XP</div><div class="small">Rep: ${num(h.earned_reputation || h.reputation_earned || 0)}</div></div></div>`).join("") : '<p class="small">Your completed flights will appear here.</p>'}</div></div>`;
 }
 function report() {
   const m = state.active?.missions || state.active;
@@ -536,10 +536,10 @@ function report() {
   ])}<div class="details"><label class="detail"><span class="label">Flight time</span><input id="flight-minutes" type="number" min="0" step="1" inputmode="numeric" placeholder="Minutes"></label><label class="detail"><span class="label">Distance</span><input id="distance-nm" type="number" min="0" step="1" inputmode="numeric" placeholder="NM"></label></div><label class="label" for="notes">Notable event / pilot notes</label><textarea id="notes" placeholder="Optional operational notes">${esc(state.report.notes)}</textarea><br><button class="action primary" data-action="complete" ${state.submitting ? "disabled" : ""}>${state.submitting ? "Submitting…" : "Submit Flight Report"}</button></div>`;
 }
 function auth() {
-  return `<section class="hero"><div><div class="eyebrow">Pilot Career</div><h1>Sign in to FlightOps.</h1><p>Your career progression is stored securely in Supabase, not in this browser.</p></div></section><div class="card"><div class="form"><label class="label">Email<input id="email" type="email" autocomplete="email" required></label><label class="label">Password<input id="password" type="password" autocomplete="current-password" required minlength="6"></label><label class="label">Pilot name (new accounts)<input id="pilot-name" maxlength="50"></label><label class="label">Callsign (new accounts)<input id="callsign" maxlength="30"></label><div><button class="action primary" data-action="login" ${configured ? "" : "disabled"}>Login</button> <button class="action" data-action="signup" ${configured ? "" : "disabled"}>Create Account</button></div>${configured ? "" : '<div class="notice">Deployment configuration is incomplete. Set <b>VITE_SUPABASE_URL</b> and <b>VITE_SUPABASE_PUBLISHABLE_KEY</b> before using FlightOps.</div>'}</div></div>`;
+  return `<section class="hero"><div><div class="eyebrow">Pilot Career</div><h1>Sign in to FlightOps.</h1><p>Your career progression is stored securely in Supabase, not in this browser.</p></div></section><div class="card"><div class="form"><label class="label">Email<input id="email" type="email" autocomplete="email" required></label><label class="label">Password<input id="password" type="password" autocomplete="current-password" required minlength="6"></label><div class="eyebrow">New Pilot Account</div><p class="small">Set your home base. Your career mission geography will grow outward from this airport as you level up.</p><label class="label">Pilot name (new accounts)<input id="pilot-name" maxlength="50" autocomplete="name"></label><label class="label">Callsign (new accounts)<input id="callsign" maxlength="30" autocomplete="nickname"></label><label class="label">Home base airport ICAO (new accounts)<input id="home-base-icao" maxlength="4" minlength="4" autocapitalize="characters" autocomplete="off" placeholder="Example: KCHA" required></label><div class="small">Use the four-letter ICAO code for your home airport. FlightOps uses it as the starting point for your mission geography.</div><div><button class="action primary" data-action="login" ${configured ? "" : "disabled"}>Login</button> <button class="action" data-action="signup" ${configured ? "" : "disabled"}>Create Account</button></div>${configured ? "" : '<div class="notice">Deployment configuration is incomplete. Set <b>VITE_SUPABASE_URL</b> and <b>VITE_SUPABASE_PUBLISHABLE_KEY</b> before using FlightOps.</div>'}</div></div>`;
 }
 function editProfile() {
-  return `<div class="card"><div class="eyebrow">Pilot Profile</div><h2>Update pilot details</h2><div class="form"><label class="label">Pilot name<input id="pilot-name" value="${esc(state.profile?.pilot_name || state.profile?.name)}"></label><label class="label">Callsign<input id="callsign" value="${esc(state.profile?.callsign)}"></label><button class="action primary" data-action="save-profile">Save Profile</button> <button class="action" data-page="pilot">Cancel</button></div></div>`;
+  return `<div class="card"><div class="eyebrow">Pilot Profile</div><h2>Update pilot details</h2><div class="form"><label class="label">Pilot name<input id="pilot-name" value="${esc(state.profile?.pilot_name || state.profile?.name)}"></label><label class="label">Callsign<input id="callsign" value="${esc(state.profile?.callsign)}"></label><label class="label">Home base airport ICAO<input id="home-base-icao" maxlength="4" minlength="4" autocapitalize="characters" value="${esc(state.profile?.home_base_icao || "")}" placeholder="Example: KCHA"></label><div class="small">Mission geography expands outward from your home base as your career level increases.</div><button class="action primary" data-action="save-profile">Save Profile</button> <button class="action" data-page="pilot">Cancel</button></div></div>`;
 }
 function render() {
   nav();
@@ -621,21 +621,22 @@ async function signup() {
   const email = $("#email").value.trim(),
     password = $("#password").value,
     name = $("#pilot-name").value.trim(),
-    callsign = $("#callsign").value.trim();
-  if (!email || password.length < 6 || !name || !callsign)
+    callsign = $("#callsign").value.trim(),
+    homeBase = $("#home-base-icao").value.trim().toUpperCase();
+  if (!email || password.length < 6 || !name || !callsign || homeBase.length !== 4)
     return toast(
-      "Enter your email, a 6+ character password, pilot name, and callsign.",
+      "Enter your email, a 6+ character password, pilot name, callsign, and a 4-letter home base ICAO.",
       true,
     );
   const { data, error } = await sb.auth.signUp({
     email,
     password,
-    options: { data: { pilot_name: name, callsign } },
+    options: { data: { pilot_name: name, callsign, home_base_icao: homeBase } },
   });
   if (error) return err(error, "Account creation failed.");
   toast(
     data.session
-      ? "Account created. Your starter C172 and PPL are being prepared."
+      ? "Account created. Your starter C172 and PPL are being prepared from your home base."
       : "Account created. Check your email to confirm sign-in.",
   );
 }
@@ -755,13 +756,17 @@ async function purchaseAircraft(aircraftId) {
 async function saveProfile() {
   try {
     const name = $("#pilot-name").value.trim(),
-      callsign = $("#callsign").value.trim();
-    if (!name || !callsign)
-      throw new Error("Pilot name and callsign are required.");
-    await rpc("update_pilot_profile", [
-      { p_pilot_name: name, p_callsign: callsign },
-      { pilot_name: name, callsign },
-    ]);
+      callsign = $("#callsign").value.trim(),
+      homeBase = $("#home-base-icao").value.trim().toUpperCase();
+    if (!name || !callsign || homeBase.length !== 4)
+      throw new Error("Pilot name, callsign, and a 4-letter home base ICAO are required.");
+    const result = await sb.rpc("update_pilot_profile", {
+      p_pilot_name: name,
+      p_callsign: callsign,
+      p_is_public: false,
+      p_home_base_icao: homeBase,
+    });
+    if (result.error) throw result.error;
     await load();
     state.page = "pilot";
     render();
