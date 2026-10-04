@@ -480,26 +480,67 @@ function brief() {
   const a = m.aircraft_master || m;
   const q = m.required_qualification?.code || m.required_qualification_code || "Pilot qualification";
   const planning = m.planning_level || (m.required_aircraft_id === "c172" ? "Suggested planning" : "Pilot planning");
-  return `<section class="hero"><div><div class="eyebrow">Mission Brief • Pre-Flight</div><h1>${esc(missionTitle(m))}</h1><p>${esc(m.mission_code || m.id)} • ${esc(m.mission_type || m.type || "MISSION")} • ${esc(route(m))}</p></div><div><div class="label">Mission Reward</div><div class="money">${num(m.reward_credits || m.credits)} Cr</div></div></section>
+  const legs = missionLegs(m);
+  const totalDistance = Number(m.distance_nm || legs.reduce((s,l)=>s+Number(l.distance_nm||0),0) || 0);
+  const cruise = Number(a.cruise_kts || 0);
+  const blockMinutes = cruise > 0 && totalDistance > 0 ? Math.round((totalDistance / cruise) * 60 * 1.12) : null;
+  const blockText = blockMinutes ? `${Math.floor(blockMinutes/60)}h ${blockMinutes%60}m est. block` : "Pilot to calculate";
+  const altText = a.typical_altitude_ft ? `${num(a.typical_altitude_ft)} ft typical aircraft ceiling/planning reference` : "Pilot to determine";
+  const airportText = "Pilot must verify runway, NOTAM-style operational information, procedures, services, and current airport conditions in MSFS before departure.";
+  const fuelText = "Pilot responsibility — calculate usable fuel, reserves, alternate requirements, and expected wind/weather effects for the actual flight.";
+  const contingencyText = "If weather, runway, aircraft condition, fuel, or destination conditions become unacceptable, reassess the flight and divert or discontinue as appropriate.";
+  return `<section class="hero"><div><div class="eyebrow">FlightOps Dispatch Release • Pre-Flight</div><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="ops-route-chip"><span class="ops-dot"></span> DISPATCH ${esc(m.mission_code || m.id)}</span><span class="ops-route-chip">LIVE WEATHER</span></div><h1>${esc(missionTitle(m))}</h1><p>${esc(m.mission_type || m.type || "MISSION")} • ${esc(route(m))}</p></div><div><div class="label">Contract Value</div><div class="money">${num(m.reward_credits || m.credits)} Cr</div></div></section>
   <div class="grid">
-    <div class="card s8"><div class="eyebrow">01 • Mission Details</div><h2>Assignment</h2><div class="notice"><b>LIVE WEATHER REQUIRED</b> — This mission must be flown in MSFS 2024 Live Weather.</div><div class="details">
-      <div class="detail"><div class="label">Aircraft</div><strong>${esc(aircraftName(a))}</strong></div>
-      <div class="detail"><div class="label">Route</div><strong>${esc(route(m))}</strong></div>
-      <div class="detail"><div class="label">Distance</div><strong>${esc(m.distance_nm || m.distance || "—")} NM</strong></div>
-      <div class="detail"><div class="label">Qualification</div><strong>${esc(q)}</strong></div>\n      ${m.region_id ? `<div class="detail"><div class="label">Region</div><strong>${esc(m.region_id)}</strong></div>` : ""}
+    <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">01 • Dispatch Information</div><h2>Operational Release</h2></div><div class="ops-icon">✈</div></div>
+      <div class="notice"><b>LIVE WEATHER REQUIRED</b> — This mission must be flown in MSFS 2024 using Live Weather. FlightOps does not create or control simulator weather.</div>
+      <div class="details">
+        <div class="detail"><div class="label">Aircraft</div><strong>${esc(aircraftName(a))}</strong></div>
+        <div class="detail"><div class="label">Qualification</div><strong>${esc(q)}</strong></div>
+        <div class="detail"><div class="label">Distance</div><strong>${num(totalDistance)} NM</strong></div>
+        <div class="detail"><div class="label">Est. Block</div><strong>${blockText}</strong></div>
+        <div class="detail"><div class="label">Cruise Reference</div><strong>${cruise ? `${num(cruise)} KTAS` : "Pilot calculate"}</strong></div>
+        <div class="detail"><div class="label">Planning</div><strong>${esc(planning)}</strong></div>
+        <div class="detail"><div class="label">Home / Origin</div><strong>${esc(legs[0]?.origin_icao || m.origin_icao || "—")}</strong></div>
+        <div class="detail"><div class="label">Final Destination</div><strong>${esc(legs[legs.length-1]?.destination_icao || m.destination_icao || "—")}</strong></div>
+      </div>
+      <div class="eyebrow">02 • Flight Plan</div><h2>Route & Leg Sequence</h2>
+      <div class="details">${legs.map((leg,i)=>`<div class="detail"><div class="label">Leg ${i+1} of ${legs.length}</div><strong>${esc(leg.origin_icao)} → ${esc(leg.destination_icao)}</strong><div class="small">${num(leg.distance_nm)} NM • ${esc(legPurpose(leg,i+1,legs.length))}</div>${leg.leg_objective ? `<div class="small"><b>Leg objective:</b> ${esc(leg.leg_objective)}</div>` : ""}</div>`).join("")}</div>
+      <div class="callout"><b>Planning standard:</b> ${esc(planning)}<br>${planning === "Suggested planning" ? "FlightOps provides a suggested framework. The pilot may modify the route and remains responsible for the final plan." : "The pilot is responsible for the final route, altitude, fuel, alternate, weather, and navigation plan."}</div>
+      <p class="copy"><b>Altitude reference:</b> ${altText}<br><b>Fuel planning:</b> ${fuelText}<br><b>Estimated time:</b> ${blockText}. Actual time will depend on routing, winds, traffic, taxi, and ATC.</p>
     </div>
-    <div class="eyebrow">02 • Route & Flight Planning</div>
-    ${missionLegs(m).length > 1 ? `<div class="callout"><b>Multi-Leg Assignment</b><br><span class="small">Complete each leg in sequence. The mission remains active between legs.</span><div class="details">${missionLegs(m).map((leg, i) => `<div class="detail"><div class="label">Leg ${i + 1}</div><strong>${esc(leg.origin_icao)} → ${esc(leg.destination_icao)}</strong><div class="small">${num(leg.distance_nm)} NM • ${esc(legPurpose(leg, i + 1, missionLegs(m).length))}</div>${leg.leg_objective ? `<div class="small"><b>Objective:</b> ${esc(leg.leg_objective)}</div>` : ""}${leg.stop_notes ? `<div class="small">${esc(leg.stop_notes)}</div>` : ""}</div>`).join("")}</div></div>` : ""}
-<p class="copy"><b>${esc(missionTypeContext(m))}</b><br>${esc(missionDestinationContext(m))}<br>${esc(m.route_guidance || m.planning_notes || "Plan the flight in MSFS 2024 Free Flight. Verify the route, altitude, fuel, weather, and destination conditions before departure.")}</p>
-    <div class="callout"><b>Planning level:</b> ${esc(planning)}<br><b>FlightOps role:</b> ${planning === "Suggested planning" ? "Use the suggested guidance or plan your own route." : "FlightOps provides the mission requirements; the pilot is responsible for the final flight plan."}</div><div class="callout"><b>WEATHER REQUIREMENT:</b> LIVE WEATHER REQUIRED<br><span class="small">Fly this mission in MSFS 2024 using Live Weather. Custom or preset weather is not permitted for FlightOps missions.</span></div>
-    <div class="eyebrow">03 • Charts & References</div><p class="copy">${esc(m.references_text || "Use the current MSFS airport information, navigation data, charts, and procedures available to you before departure.")}</p></div>
-    <div class="card s4"><div class="eyebrow">04 • Operational Conditions</div><h2>Before You Fly</h2><p class="copy">${esc(m.weather_text || m.weather_notes || "Check current weather, winds, visibility, runway conditions, and operational considerations.")}</p>
-      <div class="eyebrow">05 • Route Hazards</div><p class="copy">${esc(m.hazards_text || "Review terrain, weather, traffic, runway length, and destination conditions appropriate to the aircraft.")}</p>
-      <div class="eyebrow">06 • Things to Watch</div><p class="copy">${esc(m.watch_items || "Fly the aircraft within its normal operating limits. Reassess the plan if conditions change.")}</p></div>
-    <div class="card s8"><div class="eyebrow">07 • Pilot Responsibilities</div><h2>Your Job</h2><p class="copy">You fly the aircraft in MSFS 2024 Free Flight. FlightOps does not control the simulator or provide automatic telemetry. <b>Live Weather is required.</b> Complete the mission manually, then return here for the debrief.</p>
-      <div class="callout"><b>Mission Objective:</b> ${esc(m.objective || m.mission_objective || "Complete the assigned route safely and accomplish the mission objective.")}</div></div>
-    <div class="card s4"><div class="eyebrow">08 • Reward</div><h2>${num(m.reward_credits || m.credits)} Cr</h2><p class="small">Base XP: +${num(m.reward_xp || m.xp)} XP</p><p class="small">Rewards are finalized after your flight report.</p></div>
-    <div class="card s12"><div class="eyebrow">09 • Ready?</div><h2>Accept → Fly → Complete → Debrief</h2><p class="copy">Accepting locks this contract to your pilot. Only one active mission is allowed at a time.</p><button class="action primary" data-action="accept" ${state.active ? "disabled" : ""}>Accept Mission</button> <button class="action" data-page="missions">Back to Mission Board</button></div>
+    <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">03 • Aircraft & Airport</div><h2>Dispatch Checks</h2></div><div class="ops-icon">◈</div></div>
+      <p class="copy"><b>Aircraft:</b> ${esc(aircraftName(a))}<br>${num(a.seats || 0)} seats • ${num(a.engines || 1)} engine${Number(a.engines||1)===1?"":"s"} • ${esc(a.engine_type || "—")}</p>
+      <div class="eyebrow">Airport Review</div><p class="copy">${airportText}</p>
+      <div class="eyebrow">Weather</div><p class="copy">Use MSFS Live Weather and review departure, enroute, destination, winds, visibility, ceilings, precipitation, turbulence, and storm activity before launch.</p>
+      <div class="eyebrow">Operational Hazards</div><p class="copy">${esc(m.hazards_text || "Review terrain, runway length, weather, traffic, airspace, obstacles, and destination conditions appropriate to the aircraft.")}</p>
+    </div>
+    <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">04 • Mission Execution</div><h2>Captain's Brief</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> PILOT IN COMMAND</div></div>
+      <p class="copy"><b>Mission context:</b> ${esc(missionTypeContext(m))}</p>
+      <div class="callout"><b>Primary objective:</b> ${esc(m.objective || m.mission_objective || "Complete the assigned route safely and accomplish the mission objective.")}</div>
+      <div class="details">
+        <div class="detail"><div class="label">Departure</div><strong>${esc(legs[0]?.origin_icao || "—")}</strong><div class="small">Complete preflight and departure checks.</div></div>
+        <div class="detail"><div class="label">Enroute</div><strong>Monitor conditions</strong><div class="small">Reassess fuel, weather, navigation and aircraft status.</div></div>
+        <div class="detail"><div class="label">Arrival</div><strong>${esc(legs[legs.length-1]?.destination_icao || "—")}</strong><div class="small">Confirm runway and approach suitability before descent.</div></div>
+        <div class="detail"><div class="label">Contingency</div><strong>Reassess / Divert</strong><div class="small">${contingencyText}</div></div>
+      </div>
+    </div>
+    <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">05 • Dispatch Notes</div><h2>Things to Watch</h2></div><div class="ops-icon">!</div></div>
+      <p class="copy">${esc(m.watch_items || "Protect aircraft limitations, fuel reserves, weather margins, terrain clearance, runway suitability, and passenger/cargo objectives.")}</p>
+      <p class="copy"><b>Destination planning:</b> ${esc(missionDestinationContext(m))}</p>
+      <p class="copy"><b>Weather requirement:</b> Live Weather only.</p>
+    </div>
+    <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">06 • Pilot Responsibilities</div><h2>Before You Accept</h2></div><div class="ops-route-chip">FLIGHTOPS STANDARD</div></div>
+      <div class="details">
+        <div class="detail"><div class="label">1</div><strong>Verify aircraft</strong><div class="small">Use the assigned/eligible aircraft in MSFS.</div></div>
+        <div class="detail"><div class="label">2</div><strong>Build the flight plan</strong><div class="small">Route, altitude, fuel, alternate and navigation.</div></div>
+        <div class="detail"><div class="label">3</div><strong>Set Live Weather</strong><div class="small">Preset/custom weather is not permitted.</div></div>
+        <div class="detail"><div class="label">4</div><strong>Fly the mission</strong><div class="small">Use normal operating procedures and sound judgment.</div></div>
+        <div class="detail"><div class="label">5</div><strong>Debrief honestly</strong><div class="small">Report outcome, landing, weather, aircraft condition and objective.</div></div>
+      </div>
+    </div>
+    <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">07 • Mission Objective</div><h2>Success Standard</h2></div><div class="ops-icon">✓</div></div><div class="callout"><b>${esc(m.objective || m.mission_objective || "Complete the assigned route safely and accomplish the mission objective.")}</b></div><p class="copy">Mission success is determined during debrief. Safe flight and objective completion matter more than simply reaching the destination.</p></div>
+    <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">08 • Compensation</div><h2>${num(m.reward_credits || m.credits)} Cr</h2></div><div class="ops-icon">◆</div></div><p class="small">Base XP: +${num(m.reward_xp || m.xp)} XP</p><p class="small">Final rewards are adjusted for flight outcome, landing, objective completion and aircraft condition.</p></div>
+    <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">09 • Dispatch Decision</div><h2>Ready for Departure?</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> ${state.active ? "MISSION UNAVAILABLE" : "CONTRACT OPEN"}</div></div><p class="copy">Accepting this release locks the contract to your pilot. Only one active mission is permitted at a time.</p><button class="action primary" data-action="accept" ${state.active ? "disabled" : ""}>Accept Mission</button> <button class="action" data-page="missions">Back to Mission Board</button></div>
   </div>`;
 }
 function hangar() {
