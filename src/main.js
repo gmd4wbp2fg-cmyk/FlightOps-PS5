@@ -468,6 +468,7 @@ function activeView() {
     <p class="copy">Launch MSFS 2024 Free Flight and fly the mission using <b>Live Weather</b>. FlightOps does not control the simulator or collect automatic telemetry. When you land, return here and complete the debrief.</p>
     <button class="action primary" data-action="report">${legDisplay(m, state.active?.current_leg).count > 1 ? `Complete Leg ${legDisplay(m, state.active?.current_leg).current} / Debrief` : "Complete Mission / Debrief"}</button>
     </div>
+    ${missionPayloadCard(m)}
     <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">03 • Before Departure</div><h2>Release Checklist</h2></div><div class="ops-icon">✓</div></div><p class="copy">✓ Aircraft selected<br>✓ Route reviewed<br>✓ <b>MSFS Live Weather enabled</b><br>✓ Fuel and alternate considered<br>✓ Mission objective understood<br>✓ Fly within aircraft limitations</p><div class="eyebrow">Reward</div><h2>${num(m.reward_credits || m.credits)} Cr</h2><p class="small">Base XP +${num(m.reward_xp || m.xp)} XP. Final rewards are calculated after the debrief.</p></div>
     <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">04 • Mission Continuity</div><h2>Return to FlightOps after Landing</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> ACTIVE</div></div><p class="copy"><p class="copy">This mission remains active if you close Safari or leave FlightOps. You can return later and continue the career.</p></div>
   </div>`;
