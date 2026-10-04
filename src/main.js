@@ -132,20 +132,7 @@ function missionPayload(m) {
 function missionPayloadCard(m) {
   const p = missionPayload(m);
   if (!p.items.length) return "";
-  const pilot = Number(state.wb?.pilot || 0);
-  const fuel = Number(state.wb?.fuel || 0);
-  const planningLoad = p.total + pilot + fuel;
-  return `<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Payload • Weight & Balance</div><h2>Mission Load Planning</h2></div><div class="ops-route-chip">PLANNING WEIGHT</div></div>
-    <p class="small">Use the mission manifest as your starting load. Enter your actual pilot and planned fuel weights from MSFS to build a simple planning load.</p>
-    <div class="details">${p.items.map((x) => `<div class="detail"><div class="label">${esc(x.description || x.type)}</div><strong>${num(x.count || 1)} × ${num(x.weight_lb || 0)} lb</strong><div class="small">Item total: ${num((x.count || 1) * (x.weight_lb || 0))} lb</div></div>`).join("")}
-      <div class="detail"><div class="label">Mission payload</div><strong>${num(p.total)} lb</strong><div class="small">FlightOps planning manifest</div></div>
-      <label class="detail"><span class="label">Pilot weight</span><input id="wb-pilot" type="number" min="0" step="1" inputmode="numeric" value="${esc(state.wb?.pilot || "")}" placeholder="lb"></label>
-      <label class="detail"><span class="label">Planned fuel</span><input id="wb-fuel" type="number" min="0" step="1" inputmode="numeric" value="${esc(state.wb?.fuel || "")}" placeholder="lb"></label>
-      <div class="detail"><div class="label">Planning load</div><strong id="wb-total">${num(planningLoad)} lb</strong><div class="small">Payload + pilot + planned fuel. Aircraft empty weight is not included.</div></div>
-    </div>
-    <div class="callout"><b>MSFS verification:</b> enter the actual load distribution, fuel and pilot/passenger weights in the aircraft's Weight & Balance page. Confirm takeoff weight and CG are within published limits.</div>
-    <p class="small">FlightOps does not estimate aircraft empty weight, fuel burn or CG. The simulator's aircraft-specific model is authoritative.</p>
-  </div>`;
+  return `<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Payload • Weight & Balance</div><h2>Mission Load Planning</h2></div><div class="ops-route-chip">PLANNING WEIGHT</div></div><p class="small">Use the mission manifest as your starting load. Enter the actual passenger/cargo load in MSFS Weight & Balance.</p><div class="details">${p.items.map((x) => `<div class="detail"><div class="label">${esc(x.description || x.type)}</div><strong>${num(x.count || 1)} × ${num(x.weight_lb || 0)} lb</strong><div class="small">Item total: ${num((x.count || 1) * (x.weight_lb || 0))} lb</div></div>`).join("")}<div class="detail"><div class="label">Mission payload total</div><strong>${num(p.total)} lb</strong><div class="small">FlightOps planning manifest</div></div></div><div class="callout"><b>MSFS verification:</b> Load the mission payload in the aircraft's Weight & Balance page. Set pilot, passengers and fuel there, then confirm takeoff weight and CG are within published limits.</div></div>`;
 }
 function missionTypeContext(m) {
   const type = String(m.mission_type || "").toUpperCase();
