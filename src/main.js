@@ -192,6 +192,14 @@ function missionStorySource(m) {
   ];
   return sources.filter(([,v]) => v !== undefined && v !== null && v !== "").map(([k,v]) => k + "=" + (typeof v === "object" ? JSON.stringify(v) : String(v))).join(" • ");
 }
+function missionStoryFooter(m) {
+  const type = String(m?.mission_type || m?.type || "").toUpperCase();
+  if (type.includes("MEDEVAC") || type.includes("MEDICAL")) return "This assignment exists to support a real operational need. Complete the mission objective and record the flight accurately.";
+  if (isBushMission(m) || m?.water_operation) return "This assignment supports a location where normal surface access is limited. The aircraft is providing the transportation link.";
+  if (type.includes("CHARTER") || type.includes("VIP") || type.includes("EXECUTIVE")) return "The customer has contracted the aircraft for this scheduled movement. Professional passenger service is part of the assignment.";
+  if (type.includes("CARGO")) return "The shipment has been scheduled for delivery to its receiving point. The flight provides the contracted air connection.";
+  return "This flight was scheduled as an air transportation assignment. Complete the contracted objective and record the actual flight accurately.";
+}
 function missionStory(m) {
   const type = String(m?.mission_type || m?.type || "").toUpperCase();
   const title = String(m?.title || "").toLowerCase();
@@ -567,7 +575,7 @@ function activeView() {
   const a = m.aircraft_master || m;
   return `<section class="hero"><div><div class="eyebrow">Active Mission • Dispatch</div><h1>${esc(missionTitle(m))}</h1><p>${esc(m.mission_code || m.id)} • ${esc(route(m))}</p></div><div><div class="label">Contract Value</div><div class="money">${num(m.reward_credits || m.credits)} Cr</div></div></section>
   <div class="grid">
-    <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Mission Card</div><h2>Ready for departure</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> DISPATCHED</div></div><div class="callout"><div class="eyebrow">MISSION STORY • ${missionStoryTitle(m)}</div><p style="margin:6px 0 0">${missionStory(m)}</p></div><div class="details">
+    <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Mission Card</div><h2>Ready for departure</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> DISPATCHED</div></div><div class="callout"><div class="eyebrow">MISSION STORY • ${missionStoryTitle(m)}</div><p style="margin:6px 0 0">${missionStory(m)}</p><p class="small" style="margin:10px 0 0">${missionStoryFooter(m)}</p></div><div class="details">
       <div class="detail"><div class="label">Aircraft</div><strong>${esc(aircraftName(a))}</strong></div>
       <div class="detail"><div class="label">Route</div><strong>${esc(route(m))}</strong></div>
       <div class="detail"><div class="label">Distance</div><strong>${esc(m.distance_nm || m.distance || "—")} NM</strong></div>
