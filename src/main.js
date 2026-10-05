@@ -239,7 +239,7 @@ function legPurpose(leg, current, count) {
 }
 function nav() {
   $("#nav").innerHTML = state.session
-    ? ["home", "missions", "active", "hangar", "pilot", "career", "feedback"]
+    ? ["home", "missions", "active", "hangar", "pilot", "career", "updates", "feedback"]
         .map(
           (x) =>
             `<button data-page="${x}" class="${state.page === x ? "active" : ""}">${x[0].toUpperCase() + x.slice(1)}</button>`,
@@ -780,6 +780,11 @@ function report() {
     </div>
     <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">07 • Dispatch Result</div><h2>${d.count > 1 && d.current < d.count ? "Next Leg" : "Mission Completion"}</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> PENDING</div></div><p class="copy">${d.count > 1 && d.current < d.count ? "A successful submission advances the dispatch to the next leg. An incomplete objective still advances with reduced rewards." : "Final mission rewards are calculated after the report is accepted."}</p></div>
   </div>`;
+}
+function updates() {
+  const items = state.announcements || [];
+  return `<section class="hero"><div><div class="eyebrow">FlightOps Communications</div><h1>Updates & Announcements</h1><p>See what has changed in FlightOps and what the development team is working on next.</p></div><div><div class="label">Published Updates</div><div class="money">${items.length}</div></div></section>
+  <div class="grid">${items.length ? items.map((a) => `<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">📢 FlightOps Update</div><h2>${esc(a.title)}</h2></div><div class="ops-route-chip">${esc(new Date(a.published_at).toLocaleDateString())}</div></div><p class="copy">${esc(a.body)}</p></div>`).join("") : '<div class="card s12"><h2>No announcements yet</h2><p class="small">New FlightOps updates will appear here automatically.</p></div>'}</div>`;
 }
 function feedback() {
   const stars = [1, 2, 3, 4, 5].map((n) =>
