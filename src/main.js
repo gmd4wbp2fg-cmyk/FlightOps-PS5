@@ -235,6 +235,10 @@ async function load() {
   if (water.error && water.error.code !== "PGRST202") {
     state.loadErrors.push(`water mission generator: ${water.error.message || "request failed"}`);
   }
+  const beaver = await sb.rpc("ensure_beaver_dispatch_offer");
+  if (beaver.error && beaver.error.code !== "PGRST202") {
+    state.loadErrors.push(`Beaver dispatch: ${beaver.error.message || "request failed"}`);
+  }
   const generated = await sb.rpc("generate_mission_offers");
   if (generated.error) {
     state.loadErrors.push(`mission generator: ${generated.error.message || "request failed"}`);
