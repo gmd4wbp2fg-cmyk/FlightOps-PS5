@@ -182,6 +182,16 @@ function missionPayloadCard(m) {
   if (!p.items.length) return "";
   return `<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Payload • Weight & Balance</div><h2>Mission Load Planning</h2></div><div class="ops-route-chip">MISSION PAYLOAD</div></div><p class="small">FlightOps shows the mission payload only. Enter the actual pilot, fuel and aircraft loading in MSFS Weight & Balance.</p><div class="details">${p.items.map((x) => `<div class="detail"><div class="label">${esc(x.description || x.type)}</div><strong>${num(x.count || 1)} × ${num(x.weight_lb || 0)} lb</strong><div class="small">Item total: ${num((x.count || 1) * (x.weight_lb || 0))} lb</div></div>`).join("")}<div class="detail"><div class="label">Mission payload total</div><strong>${num(p.total)} lb</strong><div class="small">FlightOps planning manifest</div></div></div><div class="callout"><b>MSFS loading:</b> Use this manifest to load the mission's actual passengers, baggage, cargo or equipment in MSFS. Pilot weight, fuel and final weight & balance are handled entirely in MSFS.</div></div>`;
 }
+function missionStorySource(m) {
+  const sources = [
+    ["mission_type", m?.mission_type || m?.type],
+    ["template", m?.template_id],
+    ["title", m?.title],
+    ["payload", m?.payload_manifest],
+    ["water_operation", m?.water_operation],
+  ];
+  return sources.filter(([,v]) => v !== undefined && v !== null && v !== "").map(([k,v]) => k + "=" + (typeof v === "object" ? JSON.stringify(v) : String(v))).join(" • ");
+}
 function missionStory(m) {
   const type = String(m?.mission_type || m?.type || "").toUpperCase();
   const title = String(m?.title || "").toLowerCase();
