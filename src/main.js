@@ -39,6 +39,7 @@ const state = {
   loadErrors: [],
   submitting: false,
   feedbackRating: 0,
+  announcements: [],
   report: {
     outcome: "successful",
     landing: "good",
@@ -135,10 +136,44 @@ function missionWeather(m) {
     : (m.weather_requirement || "Check current weather before departure");
 }
 function missionPayload(m) {
-  const raw = Array.isArray(m?.payload_manifest) ? m.payload_manifest : [];
-  const items = raw.filter((x) => x?.type !== "payload_total");
+  const manifest = m?.payload_manifest;
+  if (manifest && !Array.isArray(manifest) && typeof manifest === "object") {
+    const items = Array.isArray(manifest.items)
+      ? manifest.items.map((x) => ({
+          description: x?.description || x?.name || x?.type || "Payload",
+          count: Number(x?.count ?? x?.quantity ?? 1),
+          weight_lb: Number(x?.weight_lb || 0),
+        }))
+      : [];
+    if (Number(manifest.passengers || 0)) {
+      const count = Number(manifest.passengers);
+      const totalWeight = Number(manifest.passenger_weight_lb || 0);
+      items.push({ description: "Passengers", count, weight_lb: count ? Math.round(totalWeight / count) : 0 });
+    }
+    if (Number(manifest.baggage_weight_lb || 0)) {
+      items.push({ description: "Baggage", count: 1, weight_lb: Number(manifest.baggage_weight_lb) });
+    }
+    if (Number(manifest.medical_equipment_lb || 0)) {
+      items.push({ description: "Medical equipment", count: 1, weight_lb: Number(manifest.medical_equipment_lb) });
+    }
+    if (Number(manifest.patients || 0)) {
+      items.push({ description: "Patient(s)", count: Number(manifest.patients), weight_lb: 0 });
+    }
+    if (Number(manifest.medical_crew || 0)) {
+      items.push({ description: "Medical crew", count: Number(manifest.medical_crew), weight_lb: 0 });
+    }
+    const total = Number(manifest.total_weight_lb || 0) ||
+      items.reduce((sum, x) => sum + Number(x.count || 1) * Number(x.weight_lb || 0), 0);
+    return { items, total };
+  }
+  const raw = Array.isArray(manifest) ? manifest : [];
+  const items = raw.filter((x) => x?.type !== "payload_total").map((x) => ({
+    description: x?.description || x?.name || x?.type || "Payload",
+    count: Number(x?.count ?? x?.quantity ?? 1),
+    weight_lb: Number(x?.weight_lb || 0),
+  }));
   const total = raw.find((x) => x?.type === "payload_total")?.weight_lb ??
-    items.reduce((sum, x) => sum + Number(x?.weight_lb || 0), 0);
+    items.reduce((sum, x) => sum + Number(x.count || 1) * Number(x.weight_lb || 0), 0);
   return { items, total };
 }
 function missionPayloadCard(m) {
@@ -257,6 +292,7 @@ async function load() {
       sb.from("active_missions").select("*").eq("pilot_id", uid).maybeSingle(),
       sb.from("achievements").select("*").eq("active", true).order("id"),
       sb.from("pilot_achievements").select("*").eq("pilot_id", uid),
+      sb.from("announcements").select("*").eq("active", true).lte("published_at", new Date().toISOString()).order("published_at", { ascending: false }).limit(5),
       sb
         .from("flight_reports")
         .select("*")
@@ -285,6 +321,7 @@ async function load() {
     "active mission",
     "achievements",
     "pilot achievements",
+    "announcements",
     "flight history",
   ];
 
@@ -304,6 +341,7 @@ async function load() {
     activeData,
     achievementsData,
     pilotAchievementsData,
+    announcementsData,
     historyData,
   ] = values;
 
@@ -412,6 +450,7 @@ async function load() {
   state.missions = missions;
   state.active = active;
   state.achievements = achievementsData || [];
+  state.announcements = announcementsData || [];
   state.pilotAchievements = pilotAchievementsData || [];
   state.history = history;
   state.loading = false;
@@ -511,8 +550,14 @@ function activeView() {
 }
 function home() {
   const p = state.profile;
+  const announcements = state.announcements || [];
+  const latestAnnouncement = announcements[0];
+  const announcementsCard = latestAnnouncement
+    ? '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">📢 FlightOps Updates</div><h2>' + esc(latestAnnouncement.title) + '</h2></div><div class="ops-route-chip">LATEST</div></div><p class="copy">' + esc(latestAnnouncement.body) + '</p><div class="small">' + esc(new Date(latestAnnouncement.published_at).toLocaleDateString()) + ' • Updates are delivered automatically to live pilots.</div></div>'
+    : '';
+
   const active = activeMission();
-  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Pilot Career</div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><h1>Welcome, ${esc(p?.pilot_name || p?.name || "Pilot")}.</h1><p>${esc(p?.callsign || "Independent operator")} • Your browser career is synced securely.</p></div>${epaulet()}</div></div><div><div class="label">Available Funds</div><div class="money">${num(p?.credits)} Cr</div></div></section><div class="ops-visual"><div class="ops-horizon"></div><div class="ops-route"></div><div class="ops-plane">✈</div><div class="ops-visual-copy"><div class="eyebrow">FlightOps Command Center</div><h2>Fly the mission. Build the career.</h2><p class="small">Your aircraft, contracts, qualifications and performance — all in one cockpit.</p></div></div><div class="grid"><div class="card s4 ops-card"><div class="ops-section-head"><div><div class="label">Pilot Level</div></div><div class="ops-icon">✦</div></div><div class="stat">Level ${level()}</div><div class="small">${num(p?.xp)} XP • ${num(p?.reputation)} reputation</div></div><div class="card s4 ops-card"><div class="ops-section-head"><div><div class="label">Completed Flights</div></div><div class="ops-icon">✈</div></div><div class="stat">${num(p?.total_flights || state.history.length)}</div><div class="small">${num(p?.completed_missions)} missions completed</div><div class="small">${Math.floor(Number(p?.total_flight_minutes || 0) / 60)}h ${Number(p?.total_flight_minutes || 0) % 60}m • ${num(p?.total_nm || 0)} NM</div></div><div class="card s4 ops-card"><div class="ops-section-head"><div><div class="label">Current Aircraft</div></div><div class="ops-icon">◈</div></div><div class="stat">${esc(aircraftName(state.aircraft[0] || {}))}</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.code || x.qualifications?.name)).join(" • ") || "Loading starter PPL…"}</div></div><div class="card s12">${active ? `<div class="eyebrow">Active Mission</div><h2>${esc(missionTitle(active))}</h2><p class="route">${esc(route(active))} • ${esc(aircraftName(active.aircraft_master || active))}</p>${activeMissionDetails(active)}<button class="action primary" data-page="active">View Active Mission</button>` : `<div class="eyebrow">Next Flight</div><h2>${missions().length ? "Available contracts" : "No eligible missions"}</h2><p class="small">${missions().length ? "Choose a contract from the mission board." : "Missions appear only when you own the required aircraft, qualification, and level."}</p>${missions().length ? "<button class=\"action primary\" data-page=\"missions\">View Mission Board</button>" : "<button class=\"action\" data-page=\"career\">View Career Progress</button>"}`}</div><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Recent Activity</div><h2>Latest Flights</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> FLIGHT LOG</div>${state.history.length ? state.history.slice(0,3).map(h=>`<div class="historyrow"><div><b>${esc(missionTitle(h.missions || h))}</b><div class="small">${esc(new Date(h.completed_at || h.created_at).toLocaleString())} • ${esc(aircraftName(h.aircraft_master || h))} • ${esc(route(h.missions || h))}</div></div><div style="text-align:right"><b class="owned">+${num(h.earned_credits || h.credits_earned || h.reward_credits)} Cr</b><div class="small">+${num(h.earned_xp || h.xp_earned || h.reward_xp)} XP${h.performance_score != null ? ` • Score ${num(h.performance_score)}/100` : ""}</div></div></div>`).join("") : '<p class="small">Your first recorded flight will appear here.</p>'}<button class="action" data-page="pilot">Open Pilot Logbook</button></div></div>`;
+  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Pilot Career</div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><h1>Welcome, ${esc(p?.pilot_name || p?.name || "Pilot")}.</h1><p>${esc(p?.callsign || "Independent operator")} • Your browser career is synced securely.</p></div>${epaulet()}</div></div><div><div class="label">Available Funds</div><div class="money">${num(p?.credits)} Cr</div></div></section><div class="ops-visual"><div class="ops-horizon"></div><div class="ops-route"></div><div class="ops-plane">✈</div><div class="ops-visual-copy"><div class="eyebrow">FlightOps Command Center</div><h2>Fly the mission. Build the career.</h2><p class="small">Your aircraft, contracts, qualifications and performance — all in one cockpit.</p></div></div><div class="grid">${announcementsCard}<div class="card s4 ops-card"><div class="ops-section-head"><div><div class="label">Pilot Level</div></div><div class="ops-icon">✦</div></div><div class="stat">Level ${level()}</div><div class="small">${num(p?.xp)} XP • ${num(p?.reputation)} reputation</div></div><div class="card s4 ops-card"><div class="ops-section-head"><div><div class="label">Completed Flights</div></div><div class="ops-icon">✈</div></div><div class="stat">${num(p?.total_flights || state.history.length)}</div><div class="small">${num(p?.completed_missions)} missions completed</div><div class="small">${Math.floor(Number(p?.total_flight_minutes || 0) / 60)}h ${Number(p?.total_flight_minutes || 0) % 60}m • ${num(p?.total_nm || 0)} NM</div></div><div class="card s4 ops-card"><div class="ops-section-head"><div><div class="label">Current Aircraft</div></div><div class="ops-icon">◈</div></div><div class="stat">${esc(aircraftName(state.aircraft[0] || {}))}</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.code || x.qualifications?.name)).join(" • ") || "Loading starter PPL…"}</div></div><div class="card s12">${active ? `<div class="eyebrow">Active Mission</div><h2>${esc(missionTitle(active))}</h2><p class="route">${esc(route(active))} • ${esc(aircraftName(active.aircraft_master || active))}</p>${activeMissionDetails(active)}<button class="action primary" data-page="active">View Active Mission</button>` : `<div class="eyebrow">Next Flight</div><h2>${missions().length ? "Available contracts" : "No eligible missions"}</h2><p class="small">${missions().length ? "Choose a contract from the mission board." : "Missions appear only when you own the required aircraft, qualification, and level."}</p>${missions().length ? "<button class=\"action primary\" data-page=\"missions\">View Mission Board</button>" : "<button class=\"action\" data-page=\"career\">View Career Progress</button>"}`}</div><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Recent Activity</div><h2>Latest Flights</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> FLIGHT LOG</div>${state.history.length ? state.history.slice(0,3).map(h=>`<div class="historyrow"><div><b>${esc(missionTitle(h.missions || h))}</b><div class="small">${esc(new Date(h.completed_at || h.created_at).toLocaleString())} • ${esc(aircraftName(h.aircraft_master || h))} • ${esc(route(h.missions || h))}</div></div><div style="text-align:right"><b class="owned">+${num(h.earned_credits || h.credits_earned || h.reward_credits)} Cr</b><div class="small">+${num(h.earned_xp || h.xp_earned || h.reward_xp)} XP${h.performance_score != null ? ` • Score ${num(h.performance_score)}/100` : ""}</div></div></div>`).join("") : '<p class="small">Your first recorded flight will appear here.</p>'}<button class="action" data-page="pilot">Open Pilot Logbook</button></div></div>`;
 }
 function missionList() {
   const active = activeMission();
