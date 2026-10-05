@@ -118,7 +118,18 @@ function missionListText(value, fallback) {
   }
   return value ? String(value) : fallback;
 }
-function isBushMission(m) {\n  return String(m?.template_id || "").toUpperCase().startsWith("BUSH-") ||\n    String(m?.template_id || "").toUpperCase().includes("-BUSH-") ||\n    /\\bbush\\b|outpost|wilderness resupply|remote bush/i.test(String(m?.title || "") + " " + String(m?.description || ""));\n}\nfunction bushMissionNotice(m) {\n  if (!isBushMission(m)) return "";\n  return "<div class=\"notice\"><b>🌲 BUSH OPERATION</b> — Remote/backcountry dispatch. Review terrain, runway surface, density altitude, wind, aircraft performance and current destination conditions before departure.</div>";\n}\nfunction missionWeather(m) {
+function isBushMission(m) {
+  return String(m?.template_id || "").toUpperCase().startsWith("BUSH-") ||
+    String(m?.template_id || "").toUpperCase().includes("-BUSH-") ||
+    /\bbush\b|outpost|wilderness resupply|remote bush/i.test(
+      String(m?.title || "") + " " + String(m?.description || "")
+    );
+}
+function bushMissionNotice(m) {
+  if (!isBushMission(m)) return "";
+  return '<div class="notice"><b>🌲 BUSH OPERATION</b> — Remote/backcountry dispatch. Review terrain, runway surface, density altitude, wind, aircraft performance and current destination conditions before departure.</div>';
+}
+function missionWeather(m) {
   return String(m.weather_requirement || "").toUpperCase() === "LIVE_WEATHER"
     ? "Live Weather required"
     : (m.weather_requirement || "Check current weather before departure");
