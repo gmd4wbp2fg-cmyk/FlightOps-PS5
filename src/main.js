@@ -553,7 +553,7 @@ function home() {
   const announcements = state.announcements || [];
   const latestAnnouncement = announcements[0];
   const announcementsCard = latestAnnouncement
-    ? '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">📢 FlightOps Updates</div><h2>' + esc(latestAnnouncement.title) + '</h2></div><div class="ops-route-chip">LATEST</div></div><p class="copy">' + esc(latestAnnouncement.body) + '</p><div class="small">' + esc(new Date(latestAnnouncement.published_at).toLocaleDateString()) + ' • Updates are delivered automatically to live pilots.</div></div>'
+    ? '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">📢 FlightOps Updates</div><h2>' + esc(latestAnnouncement.title) + '</h2></div><div class="ops-route-chip">LATEST</div></div><p class="copy">' + esc(latestAnnouncement.body) + '</p><div class="small">' + esc(new Date(latestAnnouncement.published_at).toLocaleDateString()) + ' • Updates are delivered automatically to live pilots.</div><button class="primary" data-page="updates">View all updates</button></div></div>'
     : '';
 
   const active = activeMission();
