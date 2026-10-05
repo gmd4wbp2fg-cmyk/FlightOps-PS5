@@ -820,6 +820,7 @@ function render() {
           hangar,
           pilot,
           career,
+          updates,
           feedback,
           report,
           edit: editProfile,
