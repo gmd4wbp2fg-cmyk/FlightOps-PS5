@@ -1153,6 +1153,35 @@ function bind() {
     });
 
   $("#app")
+    .querySelectorAll("[data-dispatch-staff]")
+    .forEach((b) => {
+      b.onclick = async () => {
+        if (state.submitting) return;
+        const select = document.querySelector('[data-staff-contract="' + b.dataset.dispatchStaff + '"]');
+        const parts = String(select?.value || "").split("|");
+        if (parts.length !== 2 || !parts[0] || !parts[1]) return toast("Select a company contract first.", true);
+        state.submitting = true;
+        render();
+        try {
+          const result = await sb.rpc("dispatch_staff_pilot", {
+            p_staff_id: b.dataset.dispatchStaff,
+            p_mission_id: parts[0],
+            p_aircraft_id: parts[1],
+          });
+          if (result.error) throw result.error;
+          await load();
+          state.page = "crew";
+          render();
+          toast("Employee dispatched on company contract.");
+        } catch (e) {
+          state.submitting = false;
+          render();
+          err(e, "Staff dispatch failed.");
+        }
+      };
+    });
+
+  $("#app")
     .querySelectorAll("[data-brief]")
     .forEach(
       (b) =>
