@@ -499,6 +499,7 @@ function activeView() {
     <p class="copy">Launch MSFS 2024 Free Flight and fly the mission using <b>Live Weather</b>. FlightOps does not control the simulator or collect automatic telemetry. When you land, return here and complete the debrief.</p>
     <button class="action primary" data-action="report">${legDisplay(m, state.active?.current_leg).count > 1 ? `Complete Leg ${legDisplay(m, state.active?.current_leg).current} / Debrief` : "Complete Mission / Debrief"}</button>
     </div>
+    ${bushMissionNotice(m)}
     ${missionPayloadCard(m)}
     <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">03 • Before Departure</div><h2>Release Checklist</h2></div><div class="ops-icon">✓</div></div><p class="copy">✓ Aircraft selected<br>✓ Route reviewed<br>✓ <b>MSFS Live Weather enabled</b><br>✓ Fuel and alternate considered<br>✓ Mission objective understood<br>✓ Fly within aircraft limitations</p><div class="eyebrow">Reward</div><h2>${num(m.reward_credits || m.credits)} Cr</h2><p class="small">Base XP +${num(m.reward_xp || m.xp)} XP. Final rewards are calculated after the debrief.</p></div>
     <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">04 • Mission Continuity</div><h2>Return to FlightOps after Landing</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> ACTIVE</div></div><p class="copy"><p class="copy">This mission remains active if you close Safari or leave FlightOps. You can return later and continue the career.</p></div>
@@ -557,6 +558,7 @@ function brief() {
       <div class="callout"><b>Planning standard:</b> ${esc(planning)}<br>${planning === "Suggested planning" ? "FlightOps provides a suggested framework. The pilot may modify the route and remains responsible for the final plan." : "The pilot is responsible for the final route, altitude, fuel, alternate, weather, and navigation plan."}</div>
       <p class="copy"><b>Altitude reference:</b> ${altText}<br><b>Fuel planning:</b> ${fuelText}<br><b>Estimated time:</b> ${blockText}. Actual time will depend on routing, winds, traffic, taxi, and ATC.</p>
     </div>
+    ${bushMissionNotice(m)}
     ${missionPayloadCard(m)}
     <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">03 • Weight & Balance</div><h2>Load Planning</h2></div><div class="ops-icon">⚖</div></div>
       <p class="copy">Use the mission manifest as your starting load. In MSFS, enter the actual passenger/cargo distribution, fuel and pilot weight for the aircraft.</p>
