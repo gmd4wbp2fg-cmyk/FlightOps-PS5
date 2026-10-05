@@ -557,7 +557,7 @@ function activeView() {
   const a = m.aircraft_master || m;
   return `<section class="hero"><div><div class="eyebrow">Active Mission • Dispatch</div><h1>${esc(missionTitle(m))}</h1><p>${esc(m.mission_code || m.id)} • ${esc(route(m))}</p></div><div><div class="label">Contract Value</div><div class="money">${num(m.reward_credits || m.credits)} Cr</div></div></section>
   <div class="grid">
-    <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Mission Card</div><h2>Ready for departure</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> DISPATCHED</div></div><div class="callout"><div class="eyebrow">MISSION STORY</div><p style="margin:6px 0 0">${missionStory(m)}</p></div><div class="details">
+    <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Mission Card</div><h2>Ready for departure</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> DISPATCHED</div></div><div class="callout"><div class="eyebrow">MISSION STORY • ${missionStoryTitle(m)}</div><p style="margin:6px 0 0">${missionStory(m)}</p></div><div class="details">
       <div class="detail"><div class="label">Aircraft</div><strong>${esc(aircraftName(a))}</strong></div>
       <div class="detail"><div class="label">Route</div><strong>${esc(route(m))}</strong></div>
       <div class="detail"><div class="label">Distance</div><strong>${esc(m.distance_nm || m.distance || "—")} NM</strong></div>
@@ -583,6 +583,22 @@ function home() {
 
   const active = activeMission();
   return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Pilot Career</div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><h1>Welcome, ${esc(p?.pilot_name || p?.name || "Pilot")}.</h1><p>${esc(p?.callsign || "Independent operator")} • Your browser career is synced securely.</p></div>${epaulet()}</div></div><div><div class="label">Available Funds</div><div class="money">${num(p?.credits)} Cr</div></div></section><div class="ops-visual"><div class="ops-horizon"></div><div class="ops-route"></div><div class="ops-plane">✈</div><div class="ops-visual-copy"><div class="eyebrow">FlightOps Command Center</div><h2>Fly the mission. Build the career.</h2><p class="small">Your aircraft, contracts, qualifications and performance — all in one cockpit.</p></div></div><div class="grid">${announcementsCard}<div class="card s4 ops-card"><div class="ops-section-head"><div><div class="label">Pilot Level</div></div><div class="ops-icon">✦</div></div><div class="stat">Level ${level()}</div><div class="small">${num(p?.xp)} XP • ${num(p?.reputation)} reputation</div></div><div class="card s4 ops-card"><div class="ops-section-head"><div><div class="label">Completed Flights</div></div><div class="ops-icon">✈</div></div><div class="stat">${num(p?.total_flights || state.history.length)}</div><div class="small">${num(p?.completed_missions)} missions completed</div><div class="small">${Math.floor(Number(p?.total_flight_minutes || 0) / 60)}h ${Number(p?.total_flight_minutes || 0) % 60}m • ${num(p?.total_nm || 0)} NM</div></div><div class="card s4 ops-card"><div class="ops-section-head"><div><div class="label">Current Aircraft</div></div><div class="ops-icon">◈</div></div><div class="stat">${esc(aircraftName(state.aircraft[0] || {}))}</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.code || x.qualifications?.name)).join(" • ") || "Loading starter PPL…"}</div></div><div class="card s12">${active ? `<div class="eyebrow">Active Mission</div><h2>${esc(missionTitle(active))}</h2><p class="route">${esc(route(active))} • ${esc(aircraftName(active.aircraft_master || active))}</p>${activeMissionDetails(active)}<button class="action primary" data-page="active">View Active Mission</button>` : `<div class="eyebrow">Next Flight</div><h2>${missions().length ? "Available contracts" : "No eligible missions"}</h2><p class="small">${missions().length ? "Choose a contract from the mission board." : "Missions appear only when you own the required aircraft, qualification, and level."}</p>${missions().length ? "<button class=\"action primary\" data-page=\"missions\">View Mission Board</button>" : "<button class=\"action\" data-page=\"career\">View Career Progress</button>"}`}</div><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Recent Activity</div><h2>Latest Flights</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> FLIGHT LOG</div>${state.history.length ? state.history.slice(0,3).map(h=>`<div class="historyrow"><div><b>${esc(missionTitle(h.missions || h))}</b><div class="small">${esc(new Date(h.completed_at || h.created_at).toLocaleString())} • ${esc(aircraftName(h.aircraft_master || h))} • ${esc(route(h.missions || h))}</div></div><div style="text-align:right"><b class="owned">+${num(h.earned_credits || h.credits_earned || h.reward_credits)} Cr</b><div class="small">+${num(h.earned_xp || h.xp_earned || h.reward_xp)} XP${h.performance_score != null ? ` • Score ${num(h.performance_score)}/100` : ""}</div></div></div>`).join("") : '<p class="small">Your first recorded flight will appear here.</p>'}<button class="action" data-page="pilot">Open Pilot Logbook</button></div></div>`;
+}
+function missionStoryTitle(m) {
+  const type = String(m?.mission_type || m?.type || "").toUpperCase();
+  const title = String(m?.title || "").toLowerCase();
+  if (type.includes("MEDEVAC") || title.includes("medevac")) return "Patient Transfer";
+  if (type.includes("MEDICAL") || title.includes("medical")) return "Medical Logistics";
+  if (title.includes("rescue") || title.includes("evacuation")) return "Emergency Response";
+  if (title.includes("survey")) return "Field Survey Operation";
+  if (title.includes("mail")) return "Remote Mail Service";
+  if (title.includes("fuel")) return "Remote Fuel Delivery";
+  if (isBushMission(m)) return "Remote Community Support";
+  if (type.includes("CHARTER") || type.includes("EXECUTIVE") || type.includes("VIP") || title.includes("charter")) return "Client Charter";
+  if (type.includes("SCENIC") || title.includes("scenic")) return "Scenic Charter";
+  if (type.includes("CARGO") || title.includes("cargo") || title.includes("supply")) return "Scheduled Air Cargo";
+  if (m?.water_operation) return "Water Access Operation";
+  return "Scheduled Flight Assignment";
 }
 function missionRecommendationLabel(m) {
   const score = missionRecommendationScore(m);
@@ -805,7 +821,7 @@ function report() {
   const story = missionStory(m);
   return `<section class="hero"><div><div class="eyebrow">Flight Operations • Post-Flight Debrief</div><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="ops-route-chip"><span class="ops-dot"></span> DEBRIEF</span><span class="ops-route-chip">LEG ${d.current}/${d.count}</span><span class="ops-route-chip">LIVE WEATHER</span></div><h1>${esc(missionTitle(m))}</h1><p>${esc(d.leg.origin_icao)} → ${esc(d.leg.destination_icao)} • Record the flight honestly and accurately.</p></div></section>
   <div class="grid">
-    <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">MISSION STORY</div><h2>Why This Flight Happened</h2></div><div class="ops-route-chip">DISPATCH CONTEXT</div></div><p class="copy">${story}</p></div>
+    <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">MISSION STORY • ${missionStoryTitle(m)}</div><h2>Why This Flight Happened</h2></div><div class="ops-route-chip">DISPATCH CONTEXT</div></div><p class="copy">${story}</p></div>
     <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">01 • Flight Outcome</div><h2>How did the flight go?</h2></div><div class="ops-icon">✓</div></div>
       <div class="label">Overall outcome</div>${choice("outcome",[["successful","Successful"],["rough","Rough Flight"],["failed","Mission Failed"]])}
       <div class="label">Landing performance</div>${choice("landing",[["good","Good"],["hard","Hard"],["go_around","Go-around"]])}
