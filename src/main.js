@@ -795,8 +795,10 @@ function report() {
   const d = legDisplay(m, state.active?.current_leg);
   const choice = (field, values) => `<div class="fleet">${values.map(([v,l]) => `<button class="plane choice ${state.report[field]===v?"selected":""}" data-choice="${field}" data-value="${v}"><b>${l}</b></button>`).join("")}</div>`;
   const legObj = d.leg.leg_objective || m.objective || "Complete the assigned stop objective safely.";
+  const story = missionStory(m);
   return `<section class="hero"><div><div class="eyebrow">Flight Operations • Post-Flight Debrief</div><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="ops-route-chip"><span class="ops-dot"></span> DEBRIEF</span><span class="ops-route-chip">LEG ${d.current}/${d.count}</span><span class="ops-route-chip">LIVE WEATHER</span></div><h1>${esc(missionTitle(m))}</h1><p>${esc(d.leg.origin_icao)} → ${esc(d.leg.destination_icao)} • Record the flight honestly and accurately.</p></div></section>
   <div class="grid">
+    <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">MISSION STORY</div><h2>Why This Flight Happened</h2></div><div class="ops-route-chip">DISPATCH CONTEXT</div></div><p class="copy">${story}</p></div>
     <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">01 • Flight Outcome</div><h2>How did the flight go?</h2></div><div class="ops-icon">✓</div></div>
       <div class="label">Overall outcome</div>${choice("outcome",[["successful","Successful"],["rough","Rough Flight"],["failed","Mission Failed"]])}
       <div class="label">Landing performance</div>${choice("landing",[["good","Good"],["hard","Hard"],["go_around","Go-around"]])}
