@@ -192,6 +192,14 @@ function missionStorySource(m) {
   ];
   return sources.filter(([,v]) => v !== undefined && v !== null && v !== "").map(([k,v]) => k + "=" + (typeof v === "object" ? JSON.stringify(v) : String(v))).join(" • ");
 }
+function missionStorySourceLabel(m) {
+  const type = String(m?.mission_type || m?.type || "").toUpperCase();
+  const title = String(m?.title || "");
+  if (m?.template_id) return "Template dispatch • " + m.template_id;
+  if (title) return "Contract dispatch • " + title;
+  if (type) return "Contract dispatch • " + type;
+  return "Contract dispatch";
+}
 function missionStoryFooter(m) {
   const type = String(m?.mission_type || m?.type || "").toUpperCase();
   if (type.includes("MEDEVAC") || type.includes("MEDICAL")) return "This assignment exists to support a real operational need. Complete the mission objective and record the flight accurately.";
