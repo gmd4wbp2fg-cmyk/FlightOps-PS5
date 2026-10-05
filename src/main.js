@@ -649,11 +649,34 @@ function missionRecommendationLabel(m) {
   return "Strong next-flight fit";
 }
 function missionRecommendationScore(m) {
-  return Number(m?.reward_credits || m?.reward || m?.credits || 0)
-    + Number(m?.reward_xp || m?.xp_reward || m?.xp || 0) * 20
-    + (m?.water_operation ? 25000 : 0)
-    + (isBushMission(m) ? 15000 : 0)
-    - Number(m?.distance_nm || m?.distance || 0) * 10;
+  const credits = Number(m?.reward_credits || m?.reward || m?.credits || 0);
+  const xp = Number(m?.reward_xp || m?.xp_reward || m?.xp || 0);
+  const distance = Number(m?.distance_nm || m?.distance || 0);
+  const type = String(m?.mission_type || m?.type || "").toUpperCase();
+  const qualification = String(m?.required_qualification_id || m?.qualification_id || "").toUpperCase();
+  const title = String(m?.title || "").toLowerCase();
+  const currentLevel = Number(state.profile?.level || 1);
+  const currentXp = Number(state.profile?.xp || 0);
+  let score = credits + xp * 20 - distance * 10;
+
+  // Favor operations that build toward the pilot's current career path.
+  if (m?.water_operation) score += 25000;
+  if (isBushMission(m)) score += 15000;
+  if (qualification && qualification !== "PPL") score += 5000;
+  if (type.includes("MEDEVAC") || type.includes("MEDICAL")) score += 7000;
+  if (title.includes("survey") || title.includes("rescue") || title.includes("emergency")) score += 4000;
+
+  const nextAircraft = state.aircraftCatalog
+    .filter((a) => Number(a?.level_required ?? a?.min_level ?? a?.unlock_level ?? 99) > currentLevel)
+    .sort((a,b) => Number(a?.level_required ?? a?.min_level ?? a?.unlock_level ?? 99) - Number(b?.level_required ?? b?.min_level ?? b?.unlock_level ?? 99))[0];
+
+  if (nextAircraft) {
+    const targetLevel = Number(nextAircraft?.level_required ?? nextAircraft?.min_level ?? nextAircraft?.unlock_level ?? 99);
+    const remainingXp = Math.max(0, targetLevel * 1000 - currentXp);
+    if (remainingXp > 0 && xp >= Math.min(remainingXp, 500)) score += 3000;
+  }
+
+  return score;
 }
 function missionList() {
   const active = activeMission();
