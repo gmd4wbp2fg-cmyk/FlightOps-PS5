@@ -1058,8 +1058,8 @@ function crew() {
       return '<option value="' + esc(m.id + "|" + ac.aircraft_id) + '">' + esc((m.title || "Contract") + " • " + (m.origin_icao || "—") + " → " + (m.destination_icao || "—") + " • " + num(m.reward_credits || 0) + " Cr") + '</option>';
     }).join("");
     return '<div class="card s6 ops-card"><div class="eyebrow">COMPANY DISPATCH</div><h2>' + esc(e.employee_name) +
-      '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • ' + esc(e.qualification_id) + ' • ' +
-      num(e.monthly_salary) + ' Cr/month</p>' +
+      '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • Level ' + num(e.employee_level || 1) + ' • ' + esc(e.qualification_id) + ' • ' +
+      num(e.monthly_salary) + ' Cr/month • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || '—') + '</p>' +
       (eligible.length ? '<label class="label">Available company contract<select data-staff-contract="' + esc(e.id) + '">' + options +
       '</select></label><button class="action primary" data-dispatch-staff="' + esc(e.id) + '">Dispatch Pilot</button>' :
       '<div class="callout">No eligible owned-aircraft contracts are currently available for this employee.</div>') +
