@@ -379,7 +379,8 @@ async function load() {
       "Review current MSFS airport information, navigation data and applicable procedures.",
     ),
     weather_text: missionWeather(x),
-    water_operation: Boolean(x.water_operation),\n    bush_operation: isBushMission(x),
+    water_operation: Boolean(x.water_operation),
+    bush_operation: isBushMission(x),
   }));
 
   const active =
