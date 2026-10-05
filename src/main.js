@@ -219,6 +219,11 @@ async function load() {
   state.loading = true;
 
   // Refresh the mission board from the secure generator before loading offers.
+  // Ensure pilots who own float-capable aircraft can actually receive a water-operation offer.
+  const water = await sb.rpc("ensure_water_mission_offer");
+  if (water.error && water.error.code !== "PGRST202") {
+    state.loadErrors.push(`water mission generator: ${water.error.message || "request failed"}`);
+  }
   const generated = await sb.rpc("generate_mission_offers");
   if (generated.error) {
     state.loadErrors.push(`mission generator: ${generated.error.message || "request failed"}`);
@@ -416,7 +421,10 @@ function qIds() {
 }
 function missionAircraftChoices(m) {
   const choices = Array.isArray(m?.compatible_aircraft) ? m.compatible_aircraft : [];
-  return choices.length ? choices : (m?.aircraft_master ? [m.aircraft_master] : []);
+  const filtered = m?.water_operation
+    ? choices.filter((a) => a?.float_capable || a?.amphibious_capable)
+    : choices;
+  return filtered.length ? filtered : (m?.water_operation ? [] : (m?.aircraft_master ? [m.aircraft_master] : []));
 }
 function owns(m) {
   return missionAircraftChoices(m).some((a) => state.aircraft.some((owned) => (owned.aircraft_id || owned.aircraft_master?.id) === a.id));
