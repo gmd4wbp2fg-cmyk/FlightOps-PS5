@@ -50,6 +50,7 @@ const state = {
   adminCompanies: [],
   adminPilots: [],
   adminAssignments: [],
+  adminIndependentCompanies: [],
   report: {
     outcome: "successful",
     landing: "good",
@@ -343,6 +344,7 @@ async function load() {
   state.adminCompanies = state.isAdmin ? ((await sb.rpc("admin_company_list")).data || []) : [];
   state.adminPilots = state.isAdmin ? ((await sb.rpc("admin_pilot_list")).data || []) : [];
   state.adminAssignments = state.isAdmin ? ((await sb.rpc("admin_assignment_list")).data || []) : [];
+  state.adminIndependentCompanies = state.isAdmin ? ((await sb.rpc("admin_independent_company_list")).data || []) : [];
   state.loadErrors = [];
   state.loading = true;
 
@@ -993,6 +995,7 @@ function admin() {
   const companies = state.adminCompanies || [];
   const pilots = state.adminPilots || [];
   const assignments = state.adminAssignments || [];
+  const independentCompanies = state.adminIndependentCompanies || [];
   const cards = [
     ["Pilots", a.pilots, "Registered pilot profiles"],
     ["Flight Reports", a.flight_reports, "Completed/debriefed flights"],
@@ -1021,6 +1024,9 @@ function admin() {
     '</div><div class="small">Dispatched ' + esc(x.status) + '</div></div><div><div class="reward">' +
     num(x.earned_credits) + ' Cr</div><div class="small">' + num(x.earned_xp) + ' XP • ' + num(x.employee_xp) + ' employee XP</div></div></div>'
   ).join("") : '<p class="copy">No staff assignments have been recorded.</p>';
+  const independentCompanyRows = independentCompanies.length ? independentCompanies.map((c) =>
+    '<div class="mission"><div><strong>' + esc(c.company_name) + '</strong><div class="small">' + esc(c.callsign || "") + ' • Founder: ' + esc(c.founder_name || "—") + ' • Base ' + esc(c.home_base_icao || "—") + '</div><div class="small">Level ' + num(c.level) + ' • ' + num(c.xp) + ' XP • ' + num(c.company_flights) + ' flights • Fleet ' + num(c.fleet_count) + '/' + num(c.fleet_capacity) + '</div></div><div><div class="reward">' + num(c.revenue) + ' Cr</div><div class="small">' + (c.active ? 'ACTIVE' : 'INACTIVE') + '</div></div></div>'
+  ).join("") : '<p class="copy">No independent companies have been created yet.</p>';
   const companyRows = companies.length ? companies.map((p) =>
     '<div class="mission"><div><strong>' + esc(p.pilot_name) + '</strong><div class="small">' + esc(p.callsign || "") +
     ' • Level ' + num(p.level) + ' • ' + num(p.total_flights) + ' flights</div></div><div><div class="reward">' +
@@ -1033,6 +1039,7 @@ function admin() {
     '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Crew & Staff</div><h2>Employee pilots</h2></div><div class="ops-route-chip">' + num(staff.length) + ' records</div></div>' + staffRows + '</div>' +
     '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Staff Operations</div><h2>Assignment history</h2></div><div class="ops-route-chip">' + num(assignments.length) + ' assignments</div></div>' + assignmentRows + '</div>' +
     '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Companies</div><h2>Company performance</h2></div><div class="ops-route-chip">' + num(companies.length) + ' operators</div></div>' + companyRows + '</div>' +
+    '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Independent Operators</div><h2>Employee-founded companies</h2></div><div class="ops-route-chip">' + num(independentCompanies.length) + ' companies</div></div>' + independentCompanyRows + '</div>' +
     '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">System Control</div><h2>FlightOps is running</h2></div><div class="ops-route-chip">ADMIN ACCESS</div></div><p class="copy">The command center now covers pilot roster, staffing, company performance, and staff assignment history.</p><div class="callout"><b>Separation:</b> Admin activity is separate from your Tone73 pilot.</div></div></section>';
 }
 
