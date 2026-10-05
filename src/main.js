@@ -46,6 +46,8 @@ const state = {
   staff: [],
   isAdmin: false,
   adminOverview: null,
+  adminStaff: [],
+  adminCompanies: [],
   report: {
     outcome: "successful",
     landing: "good",
@@ -335,6 +337,8 @@ async function load() {
   const adminCheck = await sb.rpc("is_admin");
   state.isAdmin = adminCheck.data === true;
   state.adminOverview = state.isAdmin ? (await sb.rpc("admin_overview")).data : null;
+  state.adminStaff = state.isAdmin ? ((await sb.rpc("admin_staff_list")).data || []) : [];
+  state.adminCompanies = state.isAdmin ? ((await sb.rpc("admin_company_list")).data || []) : [];
   state.loadErrors = [];
   state.loading = true;
 
@@ -975,17 +979,39 @@ function updates() {
 
 function admin() {
   const a = state.adminOverview || {};
+  const staff = state.adminStaff || [];
+  const companies = state.adminCompanies || [];
   const cards = [
     ["Pilots", a.pilots, "Registered pilot profiles"],
     ["Flight Reports", a.flight_reports, "Completed/debriefed flights"],
     ["Active Staff", a.active_staff, "Employee pilots"],
     ["New Feedback", a.new_feedback, "Feedback awaiting review"],
     ["Missions", a.missions, "Mission records"],
-    ["Company Revenue", num(a.company_revenue || 0) + " Cr", "Reported staff/company revenue"],
+    ["Company Revenue", a.company_revenue || 0, "Reported staff/company revenue"],
   ];
-  return '<section class="hero"><div><div class="eyebrow">FlightOps Administration</div><h1>Command Center</h1><p>Administrator view of the FlightOps PS5 operation. Your pilot account remains separate from this management account.</p></div><div class="hero-stat"><b>ADMIN</b><span>Super Administrator</span></div></section><section class="grid">' +
-    cards.map((x) => '<div class="card s4 ops-card"><div class="label">' + esc(x[0]) + '</div><div class="stat">' + num(x[1] || 0) + '</div><div class="small">' + esc(x[2]) + '</div></div>').join("") +
-    '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">System Control</div><h2>FlightOps is running</h2></div><div class="ops-route-chip">ADMIN ACCESS</div></div><p class="copy">This is the beginning of the administrative control layer. The next expansion will add pilot management, flight review, feedback management, announcements, mission controls, staff operations, and system diagnostics.</p><div class="callout"><b>Important:</b> Admin activity is separate from your Tone73 pilot career.</div></div></section>';
+  const staffRows = staff.length ? staff.map((s) =>
+    '<div class="mission"><div><strong>' + esc(s.employee_name) + '</strong><div class="small">Owner: ' +
+    esc(s.owner_name) + ' • ' + num(s.experience_hours) + ' hrs • ' + esc(s.qualification_id) +
+    '</div><div class="small">' + esc(Array.isArray(s.specialties) ? s.specialties.join(" • ") : "") +
+    ' • Reliability ' + num(s.reliability) + '% • Safety ' + num(s.safety_score) + '%</div></div><div><div class="reward">' +
+    num(s.credits_generated) + ' Cr</div><div class="small">' + num(s.company_flights) + ' flights • ' +
+    num(s.employee_xp) + ' XP</div></div></div>'
+  ).join("") : '<p class="copy">No employee pilots have been hired yet.</p>';
+  const companyRows = companies.length ? companies.map((p) =>
+    '<div class="mission"><div><strong>' + esc(p.pilot_name) + '</strong><div class="small">' +
+    esc(p.callsign || "") + ' • Level ' + num(p.level) + ' • ' + num(p.total_flights) +
+    ' flights</div></div><div><div class="reward">' + num(p.company_revenue) +
+    ' Cr</div><div class="small">' + num(p.company_xp) + ' company XP</div></div></div>'
+  ).join("") : '<p class="copy">No company activity has been generated yet.</p>';
+  return '<section class="hero"><div><div class="eyebrow">FlightOps Administration</div><h1>Command Center</h1><p>Administrator view of the FlightOps PS5 operation. Your pilot account remains separate from your pilot career.</p></div><div class="hero-stat"><b>ADMIN</b><span>Super Administrator</span></div></section><section class="grid">' +
+    cards.map((x) => '<div class="card s4 ops-card"><div class="label">' + esc(x[0]) + '</div><div class="stat">' +
+      (x[0] === "Company Revenue" ? num(x[1]) + " Cr" : num(x[1])) +
+      '</div><div class="small">' + esc(x[2]) + '</div></div>').join("") +
+    '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Crew & Staff</div><h2>Employee pilots</h2></div><div class="ops-route-chip">' +
+    num(staff.length) + ' records</div></div>' + staffRows + '</div>' +
+    '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Companies</div><h2>Company performance</h2></div><div class="ops-route-chip">' +
+    num(companies.length) + ' operators</div></div>' + companyRows + '</div>' +
+    '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">System Control</div><h2>FlightOps is running</h2></div><div class="ops-route-chip">ADMIN ACCESS</div></div><p class="copy">Staffing and company data are visible here. Administrative controls can be expanded without affecting your personal pilot career.</p><div class="callout"><b>Separation:</b> Admin activity is separate from your Tone73 pilot.</div></div></section>';
 }
 
 function crew() {
