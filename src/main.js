@@ -182,6 +182,30 @@ function missionPayloadCard(m) {
   if (!p.items.length) return "";
   return `<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Payload • Weight & Balance</div><h2>Mission Load Planning</h2></div><div class="ops-route-chip">MISSION PAYLOAD</div></div><p class="small">FlightOps shows the mission payload only. Enter the actual pilot, fuel and aircraft loading in MSFS Weight & Balance.</p><div class="details">${p.items.map((x) => `<div class="detail"><div class="label">${esc(x.description || x.type)}</div><strong>${num(x.count || 1)} × ${num(x.weight_lb || 0)} lb</strong><div class="small">Item total: ${num((x.count || 1) * (x.weight_lb || 0))} lb</div></div>`).join("")}<div class="detail"><div class="label">Mission payload total</div><strong>${num(p.total)} lb</strong><div class="small">FlightOps planning manifest</div></div></div><div class="callout"><b>MSFS loading:</b> Use this manifest to load the mission's actual passengers, baggage, cargo or equipment in MSFS. Pilot weight, fuel and final weight & balance are handled entirely in MSFS.</div></div>`;
 }
+function missionStory(m) {
+  const type = String(m?.mission_type || m?.type || "").toUpperCase();
+  const title = String(m?.title || "").toLowerCase();
+  const origin = m?.origin_airport?.name || m?.origin_airport?.airport_name || m?.origin_icao || "the departure airport";
+  const destination = m?.destination_airport?.name || m?.destination_airport?.airport_name || m?.destination_icao || "the destination";
+  const p = missionPayload(m);
+  const passengerItem = p.items.find((x) => /passenger/i.test(String(x.description || "")));
+  const passengers = passengerItem ? Number(passengerItem.count || 0) : 0;
+  const countText = passengers ? passengers + " passenger" + (passengers === 1 ? "" : "s") : "a private group";
+  const water = Boolean(m?.water_operation);
+  const bush = isBushMission(m);
+  if (type.includes("MEDEVAC") || title.includes("medevac")) return "A patient transfer has been arranged between medical facilities, with the flight providing the air connection needed to move the patient to the receiving facility.";
+  if (type.includes("MEDICAL") || title.includes("medical")) return "A medical facility has requested delivery of time-sensitive equipment needed for patient care. The shipment is being moved by air because the receiving facility needs the supplies on schedule.";
+  if (title.includes("rescue") || title.includes("evacuation")) return water ? "Emergency support personnel and supplies need transportation between isolated communities that depend on water access. The flight is part of the local response effort." : "Emergency support personnel and supplies need transportation to an isolated field location where normal surface access is limited.";
+  if (title.includes("survey")) return water ? "A survey team and field equipment need transportation to a remote site accessible by water. The aircraft is providing the connection needed to begin the scheduled field work." : "A survey team and field equipment need transportation to a remote field site. The aircraft is providing the connection needed to begin the scheduled work.";
+  if (title.includes("mail")) return "Mail and light parcels have been scheduled for delivery to a remote community. Air transportation is being used to maintain the community’s regular connection to the regional distribution point.";
+  if (title.includes("fuel")) return "A remote operating site has requested aviation fuel and essential supplies. The delivery is being moved by air because the site has limited surface access.";
+  if (bush || title.includes("outpost") || title.includes("wilderness") || title.includes("resupply")) return "A remote community or field operation is awaiting a scheduled supply delivery. Air service is providing the practical connection to a location with limited surface transportation.";
+  if (type.includes("CARGO") || title.includes("cargo") || title.includes("supply")) return "A customer has arranged an air shipment between " + origin + " and " + destination + " for a scheduled delivery. The aircraft is being used to move the shipment directly to its receiving point.";
+  if (type.includes("CHARTER") || type.includes("EXECUTIVE") || type.includes("VIP") || title.includes("charter") || title.includes("executive") || title.includes("vip")) return "A private client has arranged transportation from " + origin + " to " + destination + " for " + countText + ". The passengers have requested a direct, professional transfer for their scheduled travel.";
+  if (type.includes("SCENIC") || title.includes("scenic")) return "A group of passengers has booked an aerial sightseeing flight to experience the area from the air. The operation is being conducted as a scheduled recreational charter.";
+  if (water) return "A scheduled passenger or supply movement is being made to a community that depends on water access. The aircraft is providing the connection that conventional surface transportation cannot.";
+  return "A customer has arranged this flight to move people or goods between the two scheduled locations. The aircraft is being used to provide a direct air connection for the assignment.";
+}
 function missionTypeContext(m) {
   const type = String(m.mission_type || "").toUpperCase();
   const title = String(m.title || "").toLowerCase();
@@ -597,6 +621,7 @@ function brief() {
   return `<section class="hero"><div><div class="eyebrow">FlightOps Dispatch Release • Pre-Flight</div><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="ops-route-chip"><span class="ops-dot"></span> DISPATCH ${esc(m.mission_code || m.id)}</span><span class="ops-route-chip">LIVE WEATHER</span></div><h1>${esc(missionTitle(m))}</h1><p>${esc(m.mission_type || m.type || "MISSION")} • ${esc(route(m))}</p></div><div><div class="label">Contract Value</div><div class="money">${num(m.reward_credits || m.credits)} Cr</div></div></section>
   <div class="grid">
     <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">01 • Dispatch Information</div><h2>Operational Release</h2></div><div class="ops-icon">✈</div></div>
+      <div class="callout"><div class="eyebrow">MISSION STORY</div><p style="margin:6px 0 0">${missionStory(m)}</p></div>
       <div class="notice"><b>LIVE WEATHER REQUIRED</b> — This mission must be flown in MSFS 2024 using Live Weather. FlightOps does not create or control simulator weather.</div>
       ${m.water_operation ? '<div class="notice"><b>🌊 WATER OPERATION</b> — This release requires a float/amphibious-equipped aircraft and a suitable water landing/takeoff area. Verify actual water conditions, wind, obstacles, surface, depth/clearance, and local operating considerations in MSFS before departure.</div>' : ""}
       <div class="details">
