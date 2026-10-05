@@ -44,6 +44,8 @@ const state = {
   staffStatus: null,
   staffCandidates: [],
   staff: [],
+  isAdmin: false,
+  adminOverview: null,
   report: {
     outcome: "successful",
     landing: "good",
@@ -308,7 +310,7 @@ function legPurpose(leg, current, count) {
 }
 function nav() {
   $("#nav").innerHTML = state.session
-    ? ["home", "missions", "active", "hangar", "pilot", "career", ...(state.staffStatus?.eligible ? ["crew"] : []), "updates", "feedback"]
+    ? ["home", "missions", "active", "hangar", "pilot", "career", ...(state.staffStatus?.eligible ? ["crew"] : []), ...(state.isAdmin ? ["admin"] : []), "updates", "feedback"]
         .map(
           (x) =>
             `<button data-page="${x}" class="${state.page === x ? "active" : ""}">${x[0].toUpperCase() + x.slice(1)}</button>`,
@@ -330,6 +332,9 @@ async function load() {
   if (!sb || !state.session) return;
 
   const uid = state.session.user.id;
+  const adminCheck = await sb.rpc("is_admin");
+  state.isAdmin = adminCheck.data === true;
+  state.adminOverview = state.isAdmin ? (await sb.rpc("admin_overview")).data : null;
   state.loadErrors = [];
   state.loading = true;
 
@@ -968,6 +973,21 @@ function updates() {
   <div class="grid">${items.length ? items.map((a) => `<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">${label(a.category)}</div><h2>${esc(a.title)}</h2></div><div class="ops-route-chip">${esc(new Date(a.published_at).toLocaleDateString())}</div></div><p class="copy">${esc(a.body)}</p></div>`).join("") : '<div class="card s12"><h2>No release notes yet</h2><p class="small">New FlightOps changes will appear here automatically.</p></div>'}</div>`;
 }
 
+function admin() {
+  const a = state.adminOverview || {};
+  const cards = [
+    ["Pilots", a.pilots, "Registered pilot profiles"],
+    ["Flight Reports", a.flight_reports, "Completed/debriefed flights"],
+    ["Active Staff", a.active_staff, "Employee pilots"],
+    ["New Feedback", a.new_feedback, "Feedback awaiting review"],
+    ["Missions", a.missions, "Mission records"],
+    ["Company Revenue", num(a.company_revenue || 0) + " Cr", "Reported staff/company revenue"],
+  ];
+  return '<section class="hero"><div><div class="eyebrow">FlightOps Administration</div><h1>Command Center</h1><p>Administrator view of the FlightOps PS5 operation. Your pilot account remains separate from this management account.</p></div><div class="hero-stat"><b>ADMIN</b><span>Super Administrator</span></div></section><section class="grid">' +
+    cards.map((x) => '<div class="card s4 ops-card"><div class="label">' + esc(x[0]) + '</div><div class="stat">' + num(x[1] || 0) + '</div><div class="small">' + esc(x[2]) + '</div></div>').join("") +
+    '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">System Control</div><h2>FlightOps is running</h2></div><div class="ops-route-chip">ADMIN ACCESS</div></div><p class="copy">This is the beginning of the administrative control layer. The next expansion will add pilot management, flight review, feedback management, announcements, mission controls, staff operations, and system diagnostics.</p><div class="callout"><b>Important:</b> Admin activity is separate from your Tone73 pilot career.</div></div></section>';
+}
+
 function crew() {
   const s = state.staffStatus || {};
   const staff = state.staff || [];
@@ -1014,6 +1034,7 @@ function render() {
           pilot,
           career,
           crew,
+          admin: admin,
           updates,
           feedback,
           report,
