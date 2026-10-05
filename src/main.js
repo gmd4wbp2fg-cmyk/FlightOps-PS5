@@ -784,7 +784,7 @@ function report() {
 function updates() {
   const items = state.announcements || [];
   return `<section class="hero"><div><div class="eyebrow">FlightOps Communications</div><h1>Updates & Announcements</h1><p>See what has changed in FlightOps and what the development team is working on next.</p></div><div><div class="label">Published Updates</div><div class="money">${items.length}</div></div></section>
-  <div class="grid">${items.length ? items.map((a) => `<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">📢 FlightOps Update</div><h2>${esc(a.title)}</h2></div><div class="ops-route-chip">${esc(new Date(a.published_at).toLocaleDateString())}</div></div><p class="copy">${esc(a.body)}</p></div>`).join("") : '<div class="card s12"><h2>No announcements yet</h2><p class="small">New FlightOps updates will appear here automatically.</p></div>'}</div>`;
+  <div class="grid">${items.length ? items.map((a) => `<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">${a.category === "feature" ? "🆕" : a.category === "aircraft" ? "✈️" : a.category === "mission" ? "🗺️" : a.category === "fix" ? "🛠️" : "📢"} FlightOps Update</div><h2>${esc(a.title)}</h2></div><div class="ops-route-chip">${esc(new Date(a.published_at).toLocaleDateString())}</div></div><p class="copy">${esc(a.body)}</p></div>`).join("") : '<div class="card s12"><h2>No announcements yet</h2><p class="small">New FlightOps updates will appear here automatically.</p></div>'}</div>`;
 }
 function feedback() {
   const stars = [1, 2, 3, 4, 5].map((n) =>
