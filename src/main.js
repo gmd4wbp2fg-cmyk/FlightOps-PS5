@@ -1090,7 +1090,7 @@ function crew() {
   const assignments = state.staffAssignments || [];
   const dispatchBlocks = staff.map((e) => {
     const activeAssignment = assignments.find((a) => a.staff_id === e.id && a.status === "dispatched");
-    const eligible = missions.filter((m) => aircraftForMission(m, e).length).slice(0, 6);
+    const eligible = missions.filter((m) => m.active !== false && aircraftForMission(m, e).length).slice(0, 6);
     const options = eligible.map((m) => {
       const ac = aircraftForMission(m, e)[0];
       return '<option value="' + esc(m.id + "|" + ac.aircraft_id) + '">' + esc((m.title || "Contract") + " • " + (m.origin_icao || "—") + " → " + (m.destination_icao || "—") + " • " + num(m.reward_credits || 0) + " Cr") + '</option>';
