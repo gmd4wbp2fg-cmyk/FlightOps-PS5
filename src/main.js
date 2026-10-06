@@ -1110,6 +1110,11 @@ function employeeFitScore(employee, mission) {
 function employeeFitLabel(score) {
   return score >= 85 ? "Excellent Fit" : score >= 70 ? "Strong Fit" : score >= 55 ? "Potential Fit" : "Weak Fit";
 }
+async function loadStaffCareer(staffId) {
+  if (!sb || !staffId) return [];
+  const result = await sb.rpc("staff_career_history_list", { p_staff_id: staffId });
+  return result.error ? [] : (result.data || []);
+}
 function crew() {
   const s = state.staffStatus || {};
   const staff = state.staff || [];
@@ -1170,7 +1175,7 @@ function crew() {
     })
     .join("");
   const staffCards = staff.length
-    ? staff.map((e) => '<div class="card s4 ops-card"><div class="eyebrow">EMPLOYEE PILOT</div><h2>' + esc(e.employee_name) + '</h2><p class="copy">' + esc(e.qualification_id) + ' • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || "—") + '</p><div class="details"><div class="detail"><div class="label">Level</div><strong>' + num(e.employee_level || 1) + '</strong></div><div class="detail"><div class="label">Company flights</div><strong>' + num(e.company_flights) + '</strong></div><div class="detail"><div class="label">Employee XP</div><strong>' + num(e.employee_xp) + '</strong></div><div class="detail"><div class="label">Salary</div><strong>' + num(e.monthly_salary) + ' Cr / month</strong></div></div><div class="small">Reliability ' + num(e.reliability) + '% • Safety ' + num(e.safety_score || 0) + '% • ' + num(e.experience_hours) + ' hrs • Credits generated ' + num(e.credits_generated) + ' Cr</div>' + (Number(e.employee_level || 1) >= 10 && Number(e.company_flights || 0) >= 25 && Number(e.employee_xp || 0) >= 35000 ? '<div class="callout"><b>Independent operator path unlocked.</b> This pilot can eventually leave and establish their own company.</div>' : '') + '<button class="action" data-fire-staff="' + esc(e.id) + '" data-staff-name="' + esc(e.employee_name) + '">Fire Pilot</button></div>').join("")
+    ? staff.map((e) => '<div class="card s4 ops-card"><div class="eyebrow">EMPLOYEE PILOT</div><h2>' + esc(e.employee_name) + '</h2><p class="copy">' + esc(e.qualification_id) + ' • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || "—") + '</p><div class="details"><div class="detail"><div class="label">Level</div><strong>' + num(e.employee_level || 1) + '</strong></div><div class="detail"><div class="label">Company flights</div><strong>' + num(e.company_flights) + '</strong></div><div class="detail"><div class="label">Employee XP</div><strong>' + num(e.employee_xp) + '</strong></div><div class="detail"><div class="label">Salary</div><strong>' + num(e.monthly_salary) + ' Cr / month</strong></div></div><div class="small">Reliability ' + num(e.reliability) + '% • Safety ' + num(e.safety_score || 0) + '% • ' + num(e.experience_hours) + ' hrs • Credits generated ' + num(e.credits_generated) + ' Cr</div>' + (Number(e.employee_level || 1) >= 10 && Number(e.company_flights || 0) >= 25 && Number(e.employee_xp || 0) >= 35000 ? '<div class="callout"><b>Independent operator path unlocked.</b> This pilot can eventually leave and establish their own company.</div>' : '') + '<button class="action" data-history-staff="' + esc(e.id) + '">View Career History</button> <button class="action" data-fire-staff="' + esc(e.id) + '" data-staff-name="' + esc(e.employee_name) + '">Fire Pilot</button></div>').join("")
     : '<div class="card s12 ops-card"><h2>No employees yet</h2><p class="copy">Hire a pilot from Recruiting when you are ready.</p></div>';
   const completedOperations = assignments
     .filter((a) => a.status === "completed")
@@ -1299,6 +1304,16 @@ function bind() {
           render();
           err(e, "Pilot hiring failed.");
         }
+      };
+    });
+
+  $("#app")
+    .querySelectorAll("[data-history-staff]")
+    .forEach((b) => {
+      b.onclick = async () => {
+        const rows = await loadStaffCareer(b.dataset.historyStaff);
+        const textRows = rows.length ? rows.slice(0,10).map(x => x.title + " — " + (x.description || "")).join("\n") : "No career history recorded yet.";
+        alert(textRows);
       };
     });
 
