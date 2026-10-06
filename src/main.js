@@ -1166,22 +1166,8 @@ function crew() {
   });
   const activeTraining = trainingRows.filter((t) => t.status === "active").sort((a,b) => new Date(a.completes_at || 0) - new Date(b.completes_at || 0));
   const completedTraining = trainingRows.filter((t) => t.status === "completed").slice(0, 8);
-  const trainingDashboard = `<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Staff Development</div><h2>Training Dashboard</h2></div><div class="ops-route-chip">${activeTraining.length} ACTIVE</div></div>
-  <div class="card ops-card">
-    <p class="copy">Manage employee development without opening each employee. Training costs company credits and advances the employee's career progression.</p>
-    ${activeTraining.length ? `<div class="historyrow"><div><b>Active training</b></div><div class="small">Completion</div></div>${activeTraining.map(t => {
-      const complete = t.completes_at && new Date(t.completes_at) <= new Date();
-      return `<div class="historyrow"><div><b>${esc(t.employee?.employee_name || "Employee pilot")}</b><br><span class="small">${esc(t.program?.name || t.program_id || "Training")}</span></div><div><b>${complete ? "READY TO COMPLETE" : new Date(t.completes_at).toLocaleDateString()}</b><br><span class="small">Started ${new Date(t.started_at).toLocaleDateString()}</span></div><div>${complete ? '<button class="action primary" data-complete-training="' + esc(t.id) + '">Complete Training</button>' : '<span class="small">' + num(t.cost_paid || 0) + ' Cr paid</span>'}</div></div>`;
-    }).join("")}` : '<div class="callout">No employee training is currently active.</div>'}
-    ${completedTraining.length ? `<div class="eyebrow" style="margin-top:18px">Recent Completed Training</div>${completedTraining.map(t => `<div class="historyrow"><div><b>${esc(t.employee?.employee_name || "Employee pilot")}</b><br><span class="small">${esc(t.program?.name || t.program_id || "Training")}</span></div><div class="small">Completed ${t.completed_at ? new Date(t.completed_at).toLocaleDateString() : "—"}<br>+${num(t.xp_reward || 0)} XP</div></div>`).join("")}` : ""}
-  </div></div>`;
-  const trainingOptions = staff.map(e => {
-    const active = trainingRows.find(t => t.staff_id === e.id && t.status === "active");
-    if (active) return "";
-    const eligible = (state.staffTrainingPrograms || []).filter(p => Number(e.employee_level || 1) >= Number(p.required_level || 1));
-    if (!eligible.length) return "";
-    return `<div class="card s12 ops-card"><div class="eyebrow">TRAINING AVAILABLE</div><h2>${esc(e.employee_name)}</h2><p class="copy">Level ${num(e.employee_level || 1)} • ${esc(e.qualification_id || "—")}</p><div class="details training-options">${eligible.map(p => `<div class="detail"><div class="label">${esc(p.name)}</div><strong>${num(p.cost_credits || 0)} Cr</strong><div class="small">${num(p.duration_days || 0)} days • +${num(p.xp_reward || 0)} XP</div><button class="action" data-start-training="${esc(e.id)}|${esc(p.id)}">Start Training</button></div>`).join("")}</div></div>`;
-  }).join("");
+  const trainingDashboard = "";
+  const trainingOptions = "";
 
   const staffOps = state.staffOpsStatus || {};
   const ownerCanOperate = staffOps.can_dispatch_employee !== false;
@@ -1269,7 +1255,7 @@ function crew() {
           </div>`}
       </div>
     </div>` : "";
-  return '<section class="hero"><div><div class="eyebrow">FlightOps Crew & Staff</div><h1>Build your operation.</h1><p>Hire pilots based on experience, qualifications, reliability, and cost — then put them to work on company contracts.</p></div><div class="hero-stat"><b>' + num(s.company_xp || 0) + '</b><span>Company XP</span></div></section><section class="grid"><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Hiring Status</div><h2>Employee pilots</h2></div><div class="ops-route-chip">' + num(s.active_staff || 0) + ' / ' + num(s.max_staff || 0) + '</div></div><p class="copy">Your first employee pilot costs one month of salary up front. Company assignments generate company revenue, company XP, and employee experience.</p><div class="callout"><b>Company revenue:</b> ' + num(s.company_revenue || 0) + ' Cr<br><span class="small"><b>Owner activity:</b> ' + num(staffOps.owner_flights || 0) + ' personal flights • ' + num(staffOps.employee_flights || 0) + ' employee flights resolved • <b>' + num(staffOps.available_operation_slots || 0) + '</b> employee operation slot(s) available.</span></div></div><div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Dispatch Board</div><h2>Put your staff to work</h2></div></div></div>' + (activeDispatchBlocks || '<div class="card s12 ops-card"><p class="copy">No employee is currently in flight.</p></div>') + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Available Staff</div><h2>Ready for dispatch</h2></div></div></div>' + (availableStaffBlocks || '<div class="card s12 ops-card"><p class="copy">No employees are currently available for another company contract.</p></div>') + completedOperationsCard + trainingDashboard + (trainingOptions ? '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Development Options</div><h2>Available Training</h2></div></div></div>' + trainingOptions : '') + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Your Staff</div><h2>Current employees</h2></div></div></div>' + staffCards + '</section>' + trainingModal;
+  return '<section class="hero"><div><div class="eyebrow">FlightOps Crew & Staff</div><h1>Build your operation.</h1><p>Hire pilots based on experience, qualifications, reliability, and cost — then put them to work on company contracts.</p></div><div class="hero-stat"><b>' + num(s.company_xp || 0) + '</b><span>Company XP</span></div></section><section class="grid"><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Hiring Status</div><h2>Employee pilots</h2></div><div class="ops-route-chip">' + num(s.active_staff || 0) + ' / ' + num(s.max_staff || 0) + '</div></div><p class="copy">Your first employee pilot costs one month of salary up front. Company assignments generate company revenue, company XP, and employee experience.</p><div class="callout"><b>Company revenue:</b> ' + num(s.company_revenue || 0) + ' Cr<br><span class="small"><b>Owner activity:</b> ' + num(staffOps.owner_flights || 0) + ' personal flights • ' + num(staffOps.employee_flights || 0) + ' employee flights resolved • <b>' + num(staffOps.available_operation_slots || 0) + '</b> employee operation slot(s) available.</span></div></div><div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Dispatch Board</div><h2>Put your staff to work</h2></div></div></div>' + (activeDispatchBlocks || '<div class="card s12 ops-card"><p class="copy">No employee is currently in flight.</p></div>') + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Available Staff</div><h2>Ready for dispatch</h2></div></div></div>' + (availableStaffBlocks || '<div class="card s12 ops-card"><p class="copy">No employees are currently available for another company contract.</p></div>') + completedOperationsCard + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Your Staff</div><h2>Current employees</h2></div></div></div>' + staffCards + '</section>' + trainingModal;
 }
 
 function training() {
@@ -1284,15 +1270,11 @@ function training() {
   const activeRows = active.length ? active.map(t => {
     const ready = t.completes_at && new Date(t.completes_at) <= new Date();
     return '<div class="historyrow"><div><b>' + esc(t.employee?.employee_name || "Employee pilot") + '</b><br><span class="small">' + esc(t.program?.name || t.program_id || "Training") + '</span></div><div><b>' + (ready ? "READY TO COMPLETE" : new Date(t.completes_at).toLocaleDateString()) + '</b><br><span class="small">Started ' + new Date(t.started_at).toLocaleDateString() + '</span></div><div>' + (ready ? '<button class="action primary" data-complete-training="' + esc(t.id) + '">Complete Training</button>' : '<span class="small">' + num(t.cost_paid || 0) + ' Cr paid</span>') + '</div></div>';
-  }).join("") : '<div class="callout">No employee training is currently active.</div>';
-  const completedRows = completed.map(t => '<div class="historyrow"><div><b>' + esc(t.employee?.employee_name || "Employee pilot") + '</b><br><span class="small">' + esc(t.program?.name || t.program_id || "Training") + '</span></div><div class="small">Completed ' + (t.completed_at ? new Date(t.completed_at).toLocaleDateString() : "—") + '<br>+' + num(t.xp_reward || 0) + ' XP</div></div>').join("");
-  const options = staff.map(e => {
-    if (rows.some(t => t.staff_id === e.id && t.status === "active")) return "";
-    const eligible = (state.staffTrainingPrograms || []).filter(p => Number(e.employee_level || 1) >= Number(p.required_level || 1));
-    if (!eligible.length) return "";
-    return '<div class="card s4 ops-card"><div class="eyebrow">TRAINING AVAILABLE</div><h2>' + esc(e.employee_name) + '</h2><p class="copy">Level ' + num(e.employee_level || 1) + ' • ' + esc(e.qualification_id || "—") + '</p><div class="details">' + eligible.map(p => '<div class="detail"><div class="label">' + esc(p.name) + '</div><strong>' + num(p.cost_credits || 0) + ' Cr</strong><div class="small">' + num(p.duration_days || 0) + ' days • +' + num(p.xp_reward || 0) + ' XP</div><button class="action" data-start-training="' + esc(e.id + "|" + p.id) + '">Start Training</button></div>').join("") + '</div></div>';
-  }).join("");
-  return '<section class="hero"><div><div class="eyebrow">FlightOps Staff Development</div><h1>Training Center.</h1><p>Develop your employee pilots through structured training programs. Training costs company credits and advances employee career progression.</p></div><div class="hero-stat"><b>' + num(active.length) + '</b><span>Active programs</span></div></section><section class="grid"><div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Training Management</div><h2>Active Training</h2></div><div class="ops-route-chip">' + num(active.length) + ' ACTIVE</div></div><div class="card ops-card">' + activeRows + '</div></div>' + (options ? '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Development Options</div><h2>Available Training</h2></div><div class="ops-route-chip">CAREER DEVELOPMENT</div></div></div>' + options : '<div class="s12"><div class="callout">No employees currently meet the requirements for additional training.</div></div>') + (completedRows ? '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Training History</div><h2>Recently Completed</h2></div></div><div class="card ops-card">' + completedRows + '</div></div>' : '') + '</section>';
+  }).join("") : '<div class="callout"><b>Training Academy is ready.</b><br>No employee has been sent to training yet. Go to <b>Crew</b>, select an employee, choose <b>Training</b>, review a program, and send the pilot to the Academy.</div>';
+  const completedRows = completed.length
+    ? completed.map(t => '<div class="historyrow"><div><b>' + esc(t.employee?.employee_name || "Employee pilot") + '</b><br><span class="small">' + esc(t.program?.name || t.program_id || "Training") + '</span></div><div class="small">Completed ' + (t.completed_at ? new Date(t.completed_at).toLocaleDateString() : "—") + '<br>+' + num(t.xp_reward || 0) + ' XP</div></div>').join("")
+    : "";
+  return '<section class="hero"><div><div class="eyebrow">FlightOps Staff Development</div><h1>Training Academy.</h1><p>Employees only appear here after you approve their training. Select training from the employee profile in Crew, review the program, and send the pilot to the Academy.</p></div><div class="hero-stat"><b>' + num(active.length) + '</b><span>Active programs</span></div></section><section class="grid"><div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Academy Operations</div><h2>Employees in Training</h2></div><div class="ops-route-chip">' + num(active.length) + ' ACTIVE</div></div><div class="card ops-card">' + activeRows + '</div></div>' + (completedRows ? '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Training History</div><h2>Recently Completed</h2></div></div><div class="card ops-card">' + completedRows + '</div></div>' : '') + '</section>';
 }
 
 function recruiting() {
@@ -1414,13 +1396,6 @@ function bind() {
 
   $("#app").querySelectorAll("[data-training-staff]").forEach((b) => {
     b.onclick = () => {
-      state.page = "training";
-      render();
-    };
-  });
-
-  $("#app").querySelectorAll("[data-training-staff]").forEach((b) => {
-    b.onclick = () => {
       state.trainingStaffId = b.dataset.trainingStaff;
       state.trainingProgramId = null;
       state.page = "crew";
@@ -1466,33 +1441,6 @@ function bind() {
         state.page = "training";
         render();
         toast(name + " has been sent to the Training Academy for " + programName + ".");
-      } catch (e) {
-        state.submitting = false;
-        render();
-        err(e, "Employee training could not be started.");
-      }
-    };
-  });
-
-  $("#app").querySelectorAll("[data-start-training]").forEach((b) => {
-    b.onclick = async () => {
-      if (state.submitting) return;
-      const parts = String(b.dataset.startTraining || "").split("|");
-      if (parts.length !== 2 || !parts[0] || !parts[1]) return toast("Select a valid training program.", true);
-      const staffId = parts[0], programId = parts[1];
-      const staffMember = (state.staff || []).find((x) => x.id === staffId);
-      const program = (state.staffTrainingPrograms || []).find((x) => x.id === programId);
-      const name = staffMember?.employee_name || "this pilot";
-      if (!confirm("Start " + (program?.name || "training") + " for " + name + "? This will charge " + num(program?.cost_credits || 0) + " Cr.")) return;
-      state.submitting = true;
-      render();
-      try {
-        const result = await sb.rpc("start_staff_training", { p_staff_id: staffId, p_program_id: programId });
-        if (result.error) throw result.error;
-        await load();
-        state.page = "training";
-        render();
-        toast(name + " started " + (program?.name || "training") + ".");
       } catch (e) {
         state.submitting = false;
         render();
