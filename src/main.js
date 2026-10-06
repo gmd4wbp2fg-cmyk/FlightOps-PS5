@@ -693,7 +693,14 @@ function completedMissionIds() {
 }
 function missions() {
   const completed = completedMissionIds();
-  const assigned = new Set((state.staffAssignments || []).map((a) => a.mission_id).filter(Boolean));
+  // Only an actively dispatched employee flight should reserve a mission on the owner's board.
+  // Completed/cancelled assignment history must not hide a contract from the owner.
+  const assigned = new Set(
+    (state.staffAssignments || [])
+      .filter((a) => String(a.status || "").toLowerCase() === "dispatched")
+      .map((a) => a.mission_id)
+      .filter(Boolean),
+  );
   return state.missions.filter(
     (mission) =>
       !assigned.has(missionId(mission)) &&
