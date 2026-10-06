@@ -814,6 +814,28 @@ function missions() {
       (mission.is_repeatable === true || !completed.has(missionId(mission))),
   );
 }
+async function loadActiveMissionDirect() {
+  if (!sb || !state.session) return false;
+  const result = await sb.rpc("get_active_mission_for_current_pilot");
+  if (result.error) {
+    state.loadErrors = [...(state.loadErrors || []), "active mission: " + (result.error.message || "request failed")];
+    return false;
+  }
+  const active = result.data && typeof result.data === "object" ? result.data : null;
+  if (!active || String(active.pilot_id) !== String(state.session.user.id)) {
+    state.active = null;
+    return false;
+  }
+  const mission = state.missions.find((m) => String(m.id) === String(active.mission_id)) || null;
+  active.missions = mission;
+  active.aircraft_master =
+    state.aircraft.find((a) => String(a.aircraft_id) === String(active.aircraft_id))?.aircraft_master ||
+    mission?.aircraft_master ||
+    null;
+  state.active = active;
+  return true;
+}
+
 function activeMission() {
   if (!state.active) return null;
   return (
