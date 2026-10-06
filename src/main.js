@@ -634,8 +634,10 @@ function completedMissionIds() {
 }
 function missions() {
   const completed = completedMissionIds();
+  const assigned = new Set((state.staffAssignments || []).map((a) => a.mission_id).filter(Boolean));
   return state.missions.filter(
     (mission) =>
+      !assigned.has(missionId(mission)) &&
       eligible(mission) &&
       (mission.is_repeatable === true || !completed.has(missionId(mission))),
   );
