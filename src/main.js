@@ -463,9 +463,23 @@ async function load() {
   if (coreMissionResult.error) {
     state.loadErrors.push(`core mission catalog: ${coreMissionResult.error.message || "request failed"}`);
   }
+  const CORE_MISSION_IDS = [
+    "OPS-001","OPS-002","OPS-003","OPS-005","OPS-006","OPS-007","OPS-008",
+    "OPS-009","OPS-010","OPS-011","OPS-012","OPS-013","OPS-014","OPS-015",
+    "OPS-016","OPS-017"
+  ];
+  const coreByIdResult = await sb
+    .from("missions")
+    .select("*")
+    .in("id", CORE_MISSION_IDS)
+    .eq("active", true);
+  if (coreByIdResult.error) {
+    state.loadErrors.push(`core mission recovery: ${coreByIdResult.error.message || "request failed"}`);
+  }
   const missionSource = [
     ...(missionsData || []),
     ...(coreMissionResult.data || []),
+    ...(coreByIdResult.data || []),
     ...(assignedMissionResult.data || []),
   ];
   const missionRows = missionSource.filter(
