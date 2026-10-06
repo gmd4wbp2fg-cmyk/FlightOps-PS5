@@ -1233,13 +1233,14 @@ function crew() {
             <div class="eyebrow">TRAINING PROGRAM</div>
             <h3>${esc(modalProgram.name)}</h3>
             <p class="copy">${esc(modalProgram.description || "No description available.")}</p>
+            <div class="training-investment"><div class="training-investment-block"><div class="label">Why this training is necessary</div><p>${esc(modalProgram.id === "INSTRUMENT" ? modalStaff.employee_name + " is beginning his company career. This training gives him a formal foundation for operating safely when weather, visibility, and routing become more demanding." : "This program develops a specific capability " + modalStaff.employee_name + " needs for the next stage of his company career.")}</p></div><div class="training-investment-block"><div class="label">Why invest in Taylor</div><p>${esc(modalProgram.id === "INSTRUMENT" ? "Instrument capability makes Taylor more useful to the company, improves his suitability for demanding operations, and establishes the foundation for later qualifications." : "The investment increases Taylor's operational value and expands the company contracts he can handle as he progresses.")}</p></div><div class="training-investment-block"><div class="label">Expected company benefit</div><p>${esc("Taylor receives the " + (modalProgram.name || "training") + " qualification path, " + num(modalProgram.xp_reward || 0) + " XP, and progression toward higher-level company operations.")}</p></div></div>
             <div class="details training-modal-details">
               <div class="detail"><div class="label">Cost</div><strong>${num(modalProgram.cost_credits || 0)} Cr</strong></div>
               <div class="detail"><div class="label">Duration</div><strong>${num(modalProgram.duration_days || 0)} days</strong></div>
               <div class="detail"><div class="label">XP Reward</div><strong>+${num(modalProgram.xp_reward || 0)} XP</strong></div>
               <div class="detail"><div class="label">Required Level</div><strong>Level ${num(modalProgram.required_level || 1)}</strong></div>
             </div>
-            <div class="callout"><b>Qualification:</b> ${esc(modalProgram.qualification_id || "—")}<br><span class="small">Training is completed in the Academy and advances the employee's career progression.</span></div>
+            <div class="callout"><b>Qualification:</b> ${esc(modalProgram.qualification_id || "—")}<br><span class="small">Company investment: the cost is paid now, Taylor is unavailable for company operations while training is active, and the qualification and XP are awarded when the Academy program is completed.</span></div>
             <div class="training-modal-actions">
               <button class="action" data-training-back>Back to Training List</button>
               <button class="action primary" data-training-send>Send to Training Academy</button>
