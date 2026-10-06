@@ -378,6 +378,26 @@ async function load() {
     state.loadErrors.push(`advanced mission generator: ${advanced.error.message || "request failed"}`);
   }
 
+  // Ensure each currently owned, eligible aircraft has at least one contract
+  // that explicitly names that aircraft. This prevents the global generated-offer
+  // cap from starving newer aircraft such as the C182Q, PC-12, or jets.
+  const ownedOfferAircraft = await sb
+    .from("pilot_aircraft")
+    .select("aircraft_id")
+    .eq("pilot_id", uid);
+  if (ownedOfferAircraft.error) {
+    state.loadErrors.push(`aircraft offer preparation: ${ownedOfferAircraft.error.message || "request failed"}`);
+  } else {
+    for (const row of ownedOfferAircraft.data || []) {
+      const offer = await sb.rpc("ensure_aircraft_mission_offer", {
+        p_aircraft_id: row.aircraft_id,
+      });
+      if (offer.error && offer.error.code !== "PGRST202") {
+        state.loadErrors.push(`aircraft offer ${row.aircraft_id}: ${offer.error.message || "request failed"}`);
+      }
+    }
+  }
+
   const run = async () =>
     Promise.all([
       sb.from("pilot_profiles").select("*").eq("id", uid).maybeSingle(),
