@@ -555,9 +555,23 @@ async function load() {
   state.achievements = achievementsData || [];
   state.announcements = announcementsData || [];
   state.staff = staffData || [];
-  state.staffAssignments = (staffAssignmentsData || []).map((a) => ({
+  const staffBoardResult = await sb.rpc("staff_assignment_board");
+  if (staffBoardResult.error) {
+    state.loadErrors.push(`staff assignment board: ${staffBoardResult.error.message || "request failed"}`);
+  }
+  state.staffAssignments = (staffBoardResult.data || staffAssignmentsData || []).map((a) => ({
     ...a,
-    mission: missions.find((m) => m.id === a.mission_id) || null,
+    id: a.id || a.assignment_id,
+    mission: missions.find((m) => m.id === a.mission_id) || {
+      id: a.mission_id,
+      title: a.mission_title,
+      origin_icao: a.origin_icao,
+      destination_icao: a.destination_icao,
+      base_reward: a.base_reward,
+      base_xp: a.base_xp,
+      reward_credits: a.base_reward,
+      reward_xp: a.base_xp,
+    },
     aircraft_master: aircraftMap.get(a.aircraft_id) || null,
   }));
   const staffStatusResult = await sb.rpc("staff_hiring_status");
