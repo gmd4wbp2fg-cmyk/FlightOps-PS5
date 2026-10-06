@@ -1093,6 +1093,23 @@ function admin() {
     '<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">System Control</div><h2>FlightOps is running</h2></div><div class="ops-route-chip">ADMIN ACCESS</div></div><p class="copy">The command center now covers pilot roster, staffing, company performance, and staff assignment history.</p><div class="callout"><b>Separation:</b> Admin activity is separate from your Tone73 pilot.</div></div></section>';
 }
 
+function employeeFitScore(employee, mission) {
+  let score = 50;
+  const specs = Array.isArray(employee?.specialties) ? employee.specialties : [];
+  const type = String(mission?.mission_type || "").toUpperCase();
+  const hours = Number(employee?.experience_hours || 0);
+  if (hours >= 1500) score += 8; else if (hours >= 500) score += 4;
+  if (Number(employee?.safety_score || 0) >= 95) score += 8; else if (Number(employee?.safety_score || 0) >= 90) score += 4; else if (Number(employee?.safety_score || 0) < 85) score -= 6;
+  if (Number(employee?.reliability || 0) >= 95) score += 8; else if (Number(employee?.reliability || 0) >= 90) score += 4; else if (Number(employee?.reliability || 0) < 85) score -= 5;
+  if ((type === "CARGO" || type === "SUPPLY") && specs.includes("Cargo")) score += 15;
+  if (["CHARTER","EXECUTIVE","VIP"].includes(type) && specs.includes("Charter")) score += 15;
+  if ((type === "CARGO" || type === "SUPPLY") && specs.includes("Bush")) score += 8;
+  if (["MEDICAL","MEDEVAC"].includes(type) && specs.includes("Medical")) score += 15;
+  return Math.max(1, Math.min(100, score));
+}
+function employeeFitLabel(score) {
+  return score >= 85 ? "Excellent Fit" : score >= 70 ? "Strong Fit" : score >= 55 ? "Potential Fit" : "Weak Fit";
+}
 function crew() {
   const s = state.staffStatus || {};
   const staff = state.staff || [];
@@ -1139,12 +1156,14 @@ function crew() {
       const eligible = missions.filter((m) => m.active !== false && aircraftForMission(m, e).length).slice(0, 6);
       const options = eligible.map((m) => {
         const ac = aircraftForMission(m, e)[0];
-        return '<option value="' + esc(m.id + "|" + ac.aircraft_id) + '">' + esc((m.title || "Contract") + " • " + (m.origin_icao || "—") + " → " + (m.destination_icao || "—") + " • " + num(m.reward_credits || 0) + " Cr") + '</option>';
+        const fit = employeeFitScore(e, m);
+        return '<option value="' + esc(m.id + "|" + ac.aircraft_id) + '">' + esc((m.title || "Contract") + " • " + (m.origin_icao || "—") + " → " + (m.destination_icao || "—") + " • " + num(m.reward_credits || 0) + " Cr • " + fit + "% fit") + '</option>';
       }).join("");
+      const firstFit = eligible.length ? employeeFitScore(e, eligible[0]) : 0;
       return '<div class="card s6 ops-card"><div class="eyebrow">READY FOR DISPATCH</div><h2>' + esc(e.employee_name) +
         '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • Level ' + num(e.employee_level || 1) + ' • ' + esc(e.qualification_id) + ' • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || '—') + '</p>' +
         (eligible.length && ownerCanOperate ? '<label class="label">Available company contract<select data-staff-contract="' + esc(e.id) + '">' + options +
-        '</select></label><button class="action primary" data-dispatch-staff="' + esc(e.id) + '">Dispatch Pilot</button>' :
+        '</select></label><div class="small">Pilot profile match: <b>' + firstFit + '% — ' + employeeFitLabel(firstFit) + '</b>. The selected pilot profile influences company performance.</div><button class="action primary" data-dispatch-staff="' + esc(e.id) + '">Dispatch Pilot</button>' :
         (eligible.length && !ownerCanOperate ? '<div class="notice"><b>Owner flight required.</b> Complete a personal flight before dispatching another employee contract.</div>' :
         '<div class="callout">No eligible owned-aircraft contracts are currently available for this employee.</div>')) +
         '</div>';
