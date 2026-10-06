@@ -1374,6 +1374,13 @@ function bind() {
       };
     });
 
+  $("#app").querySelectorAll("[data-training-staff]").forEach((b) => {
+    b.onclick = () => {
+      state.page = "training";
+      render();
+    };
+  });
+
   $("#app")
     .querySelectorAll("[data-history-staff]")
     .forEach((b) => {
