@@ -1481,9 +1481,13 @@ function bind() {
     .querySelectorAll("[data-page]")
     .forEach(
       (b) =>
-        (b.onclick = () => {
+        (b.onclick = async () => {
           state.page = b.dataset.page;
           render();
+          if (state.page === "active") {
+            await load();
+            if (state.page === "active") render();
+          }
         }),
     );
   $("#app")
