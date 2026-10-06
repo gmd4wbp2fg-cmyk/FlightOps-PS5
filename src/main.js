@@ -1131,7 +1131,7 @@ function crew() {
       (eligible.length && ownerCanOperate ? '<label class="label">Available company contract<select data-staff-contract="' + esc(e.id) + '">' + options +
       '</select></label><button class="action primary" data-dispatch-staff="' + esc(e.id) + '">Dispatch Pilot</button>' :
       (eligible.length && !ownerCanOperate ? '<div class="notice"><b>Owner flight required.</b> Complete a personal flight before dispatching another employee contract.</div>' :
-      '<div class="callout">No eligible owned-aircraft contracts are currently available for this employee.</div>')) +
+      '<div class="callout">No eligible owned-aircraft contracts are currently available for this employee.</div>'))) +
       '</div>';
   }).join("");
   const staffCards = staff.length
