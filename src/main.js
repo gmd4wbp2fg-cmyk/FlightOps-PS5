@@ -801,7 +801,12 @@ function missions() {
   );
 }
 function activeMission() {
-  return state.active?.missions || state.active;
+  if (!state.active) return null;
+  return (
+    state.active.missions ||
+    state.missions.find((m) => String(missionId(m)) === String(state.active.mission_id)) ||
+    state.active
+  );
 }
 function activeMissionDetails(mission) {
   return `<div class="details"><div class="detail"><div class="label">Aircraft</div><strong>${esc(aircraftName(mission.aircraft_master || mission))}</strong></div><div class="detail"><div class="label">Route</div><strong>${esc(route(mission))}</strong></div><div class="detail"><div class="label">Reward</div><strong>${num(mission.reward_credits || mission.credits)} Cr</strong></div><div class="detail"><div class="label">Experience</div><strong>+${num(mission.reward_xp || mission.xp)} XP</strong></div></div><div class="callout"><b>Objective:</b> ${esc(mission.objective || mission.mission_objective || "Complete the assigned route safely.")}</div>`;
