@@ -21,6 +21,7 @@ const esc = (v = "") =>
         c
       ],
   );
+let loadSequence = 0;
 const state = {
   page: "home",
   session: null,
@@ -352,6 +353,7 @@ function nav() {
 async function load() {
   if (!sb || !state.session) return;
 
+  const loadToken = ++loadSequence;
   const uid = state.session.user.id;
   const adminCheck = await sb.rpc("is_admin");
   state.isAdmin = adminCheck.data === true;
@@ -424,6 +426,16 @@ async function load() {
     ]);
 
   let base = await run();
+
+  // Read the active contract through an ownership-checked RPC as the authoritative
+  // browser path. This avoids losing a real contract when the direct table read
+  // is affected by the table's RLS visibility.
+  const activeRpc = await sb.rpc("get_active_mission_for_current_pilot");
+  if (!activeRpc.error && activeRpc.data) {
+    base[4] = { data: activeRpc.data, error: null };
+  } else if (activeRpc.error) {
+    state.loadErrors.push(`active mission RPC: ${activeRpc.error.message || "request failed"}`);
+  }
 
   // A stale browser access token can make an otherwise healthy career look empty.
   // Refresh once before treating authenticated reads as failed.
@@ -628,6 +640,8 @@ async function load() {
     aircraft_master: aircraftMap.get(x.aircraft_id) || null,
     missions: missions.find((m) => m.id === x.mission_id) || null,
   }));
+
+  if (loadToken !== loadSequence) return;
 
   state.profile = profile;
   state.qualifications = qualifications;
