@@ -1333,8 +1333,12 @@ function bind() {
         const e = state.staff.find(x => x.id === b.dataset.trainingStaff);
         const eligible = programs.filter(x => Number(e?.employee_level || 1) >= x[4]);
         if (!eligible.length) return toast("No training programs are currently available for this pilot.", true);
-        const pick = eligible[0];
-        if (!confirm("Start " + pick[1] + " for " + (e?.employee_name || "pilot") + "?\n\nCost: " + num(pick[2]) + " Cr\nDuration: " + pick[3] + " days")) return;
+        const choices = eligible.map((x,i) => (i+1) + ". " + x[1] + " — " + num(x[2]) + " Cr / " + x[3] + " days").join("\n");
+        const answer = prompt("Choose training for " + (e?.employee_name || "pilot") + ":\n\n" + choices + "\n\nEnter the program number:");
+        const index = Number(answer) - 1;
+        const pick = eligible[index];
+        if (!pick) return;
+        if (!confirm("Start " + pick[1] + "?\n\nCost: " + num(pick[2]) + " Cr\nDuration: " + pick[3] + " days\n\nThis will be recorded in the pilot's career history.")) return;
         state.submitting = true; render();
         try {
           const result = await sb.rpc("start_staff_training",{p_staff_id:e.id,p_program_id:pick[0]});
