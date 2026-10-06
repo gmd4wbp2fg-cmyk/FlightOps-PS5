@@ -1381,6 +1381,33 @@ function bind() {
     };
   });
 
+  $("#app").querySelectorAll("[data-start-training]").forEach((b) => {
+    b.onclick = async () => {
+      if (state.submitting) return;
+      const parts = String(b.dataset.startTraining || "").split("|");
+      if (parts.length !== 2 || !parts[0] || !parts[1]) return toast("Select a valid training program.", true);
+      const staffId = parts[0], programId = parts[1];
+      const staffMember = (state.staff || []).find((x) => x.id === staffId);
+      const program = (state.staffTrainingPrograms || []).find((x) => x.id === programId);
+      const name = staffMember?.employee_name || "this pilot";
+      if (!confirm("Start " + (program?.name || "training") + " for " + name + "? This will charge " + num(program?.cost_credits || 0) + " Cr.")) return;
+      state.submitting = true;
+      render();
+      try {
+        const result = await sb.rpc("start_staff_training", { p_staff_id: staffId, p_program_id: programId });
+        if (result.error) throw result.error;
+        await load();
+        state.page = "training";
+        render();
+        toast(name + " started " + (program?.name || "training") + ".");
+      } catch (e) {
+        state.submitting = false;
+        render();
+        err(e, "Employee training could not be started.");
+      }
+    };
+  });
+
   $("#app")
     .querySelectorAll("[data-history-staff]")
     .forEach((b) => {
