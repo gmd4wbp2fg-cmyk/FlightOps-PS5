@@ -816,17 +816,22 @@ function missions() {
 }
 async function loadActiveMissionDirect() {
   if (!sb || !state.session) return false;
-  const result = await sb.rpc("get_active_mission_for_current_pilot");
-  if (result.error) {
-    state.loadErrors = [...(state.loadErrors || []), "active mission: " + (result.error.message || "request failed")];
+  const uid = state.session.user.id;
+  const direct = await sb.from("active_missions").select("*").eq("pilot_id", uid).order("accepted_at", { ascending: false }).limit(1).maybeSingle();
+  if (direct.error) {
+    state.loadErrors = [...(state.loadErrors || []), "active mission: " + (direct.error.message || "request failed")];
     return false;
   }
-  const active = result.data && typeof result.data === "object" ? result.data : null;
-  if (!active || String(active.pilot_id) !== String(state.session.user.id)) {
+  const active = direct.data && typeof direct.data === "object" ? direct.data : null;
+  if (!active) {
     state.active = null;
     return false;
   }
-  const mission = state.missions.find((m) => String(m.id) === String(active.mission_id)) || null;
+  let mission = state.missions.find((m) => String(m.id) === String(active.mission_id)) || null;
+  if (!mission) {
+    const missionResult = await sb.from("missions").select("*").eq("id", active.mission_id).maybeSingle();
+    if (!missionResult.error) mission = missionResult.data || null;
+  }
   active.missions = mission;
   active.aircraft_master =
     state.aircraft.find((a) => String(a.aircraft_id) === String(active.aircraft_id))?.aircraft_master ||
