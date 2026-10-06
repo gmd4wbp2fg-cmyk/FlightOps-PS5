@@ -44,6 +44,7 @@ const state = {
   staffStatus: null,
   staffCandidates: [],
   staff: [],
+  staffAssignments: [],
   isAdmin: false,
   adminOverview: null,
   adminStaff: [],
@@ -378,6 +379,7 @@ async function load() {
       sb.from("pilot_achievements").select("*").eq("pilot_id", uid),
       sb.from("announcements").select("*").eq("active", true).lte("published_at", new Date().toISOString()).order("published_at", { ascending: false }).limit(5),
       sb.from("pilot_staff").select("*").eq("owner_pilot_id", uid).order("hired_at", { ascending: false }),
+      sb.from("staff_assignments").select("*").eq("owner_pilot_id", uid).order("dispatched_at", { ascending: false }).limit(30),
       sb
         .from("flight_reports")
         .select("*")
@@ -408,6 +410,7 @@ async function load() {
     "pilot achievements",
     "announcements",
     "staff",
+    "staff assignments",
     "flight history",
   ];
 
@@ -429,6 +432,7 @@ async function load() {
     pilotAchievementsData,
     announcementsData,
     staffData,
+    staffAssignmentsData,
     historyData,
   ] = values;
 
@@ -539,6 +543,11 @@ async function load() {
   state.achievements = achievementsData || [];
   state.announcements = announcementsData || [];
   state.staff = staffData || [];
+  state.staffAssignments = (staffAssignmentsData || []).map((a) => ({
+    ...a,
+    mission: missions.find((m) => m.id === a.mission_id) || null,
+    aircraft_master: aircraftMap.get(a.aircraft_id) || null,
+  }));
   const staffStatusResult = await sb.rpc("staff_hiring_status");
   if (staffStatusResult.error) {
     state.staffStatus = null;
@@ -1064,7 +1073,9 @@ function crew() {
     const baseOk = !employee?.home_base_icao || !pa.base_icao || pa.base_icao === employee.home_base_icao;
     return allowed && qualificationOk && baseOk;
   });
+  const assignments = state.staffAssignments || [];
   const dispatchBlocks = staff.map((e) => {
+    const activeAssignment = assignments.find((a) => a.staff_id === e.id && a.status === "dispatched");
     const eligible = missions.filter((m) => aircraftForMission(m, e).length).slice(0, 6);
     const options = eligible.map((m) => {
       const ac = aircraftForMission(m, e)[0];
@@ -1073,9 +1084,14 @@ function crew() {
     return '<div class="card s6 ops-card"><div class="eyebrow">COMPANY DISPATCH</div><h2>' + esc(e.employee_name) +
       '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • Level ' + num(e.employee_level || 1) + ' • ' + esc(e.qualification_id) + ' • ' +
       num(e.monthly_salary) + ' Cr/month • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || '—') + '</p>' +
+      (activeAssignment ? '<div class="callout"><b>✈️ IN FLIGHT / DISPATCHED</b><br>' +
+        esc(activeAssignment.mission?.title || activeAssignment.mission_id) + ' • ' + esc((activeAssignment.mission?.origin_icao || e.home_base_icao || "—") + " → " + (activeAssignment.mission?.destination_icao || "—")) +
+        '<br>Aircraft: ' + esc(activeAssignment.aircraft_master?.model || activeAssignment.aircraft_id) +
+        '<br><span class="small">Projected contract revenue: ' + num(activeAssignment.mission?.reward_credits || activeAssignment.mission?.base_reward || 0) + ' Cr</span>' +
+        '<br><button class="action primary" data-resolve-staff="' + esc(activeAssignment.id) + '">Resolve Employee Flight</button></div>' :
       (eligible.length ? '<label class="label">Available company contract<select data-staff-contract="' + esc(e.id) + '">' + options +
       '</select></label><button class="action primary" data-dispatch-staff="' + esc(e.id) + '">Dispatch Pilot</button>' :
-      '<div class="callout">No eligible owned-aircraft contracts are currently available for this employee.</div>') +
+      '<div class="callout">No eligible owned-aircraft contracts are currently available for this employee.</div>')) +
       '</div>';
   }).join("");
   const staffCards = staff.length
@@ -1167,6 +1183,31 @@ function bind() {
           state.submitting = false;
           render();
           err(e, "Pilot hiring failed.");
+        }
+      };
+    });
+
+  $("#app")
+    .querySelectorAll("[data-resolve-staff]")
+    .forEach((b) => {
+      b.onclick = async () => {
+        if (state.submitting) return;
+        state.submitting = true;
+        render();
+        try {
+          const result = await sb.rpc("complete_staff_assignment", {
+            p_assignment_id: b.dataset.resolveStaff,
+            p_success: true,
+          });
+          if (result.error) throw result.error;
+          await load();
+          state.page = "crew";
+          render();
+          toast("Employee flight completed. Revenue and XP credited.");
+        } catch (e) {
+          state.submitting = false;
+          render();
+          err(e, "Employee flight resolution failed.");
         }
       };
     });
