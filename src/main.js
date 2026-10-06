@@ -591,16 +591,36 @@ async function load() {
     bush_operation: isBushMission(x),
   }));
 
-  const active =
+  // Resolve the active contract deterministically. The primary query uses maybeSingle(),
+  // but a malformed/empty response must never make a real active mission disappear.
+  let active =
     activeData && !Array.isArray(activeData) ? activeData : null;
 
+  if (!active) {
+    const activeFallback = await sb
+      .from("active_missions")
+      .select("*")
+      .eq("pilot_id", uid)
+      .order("accepted_at", { ascending: false })
+      .limit(1);
+    if (activeFallback.error) {
+      state.loadErrors.push(`active mission fallback: ${activeFallback.error.message || "request failed"}`);
+    } else {
+      active = activeFallback.data?.[0] || null;
+    }
+  }
+
   const activeMission = active
-    ? missions.find((x) => x.id === active.mission_id) || null
+    ? missions.find((x) => String(x.id) === String(active.mission_id)) || null
     : null;
 
-  if (active && activeMission) {
+  if (active) {
     active.missions = activeMission;
-    active.aircraft_master = aircraftMap.get(active.aircraft_id || activeMission.required_aircraft_id) || activeMission.aircraft_master;
+    active.aircraft_master =
+      aircraftMap.get(active.aircraft_id) ||
+      activeMission?.aircraft_master ||
+      (activeMission ? aircraftMap.get(activeMission.required_aircraft_id) : null) ||
+      null;
   }
 
   const history = historyData.map((x) => ({
