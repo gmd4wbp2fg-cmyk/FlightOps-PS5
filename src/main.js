@@ -436,10 +436,22 @@ async function load() {
     historyData,
   ] = values;
 
+  const assignedMissionIds = [...new Set((staffAssignmentsData || []).map((a) => a.mission_id).filter(Boolean))];
+  const assignedMissionResult = assignedMissionIds.length
+    ? await sb.from("missions").select("*").in("id", assignedMissionIds)
+    : { data: [], error: null };
+  if (assignedMissionResult.error) {
+    state.loadErrors.push(`staff mission records: ${assignedMissionResult.error.message || "request failed"}`);
+  }
+  const missionRows = [
+    ...missionsData,
+    ...(assignedMissionResult.data || []).filter((m) => !missionsData.some((x) => x.id === m.id)),
+  ];
+
   const qualificationIds = [
     ...new Set([
       ...pilotQualifications.map((x) => x.qualification_id).filter(Boolean),
-      ...missionsData
+      ...missionRows
         .map((x) => x.required_qualification_id)
         .filter(Boolean),
     ]),
@@ -448,7 +460,7 @@ async function load() {
   const aircraftIds = [
     ...new Set([
       ...pilotAircraft.map((x) => x.aircraft_id).filter(Boolean),
-      ...missionsData.map((x) => x.required_aircraft_id).filter(Boolean),
+      ...missionRows.map((x) => x.required_aircraft_id).filter(Boolean),
       ...historyData.map((x) => x.aircraft_id).filter(Boolean),
     ]),
   ];
@@ -490,7 +502,7 @@ async function load() {
     aircraft_master: aircraftMap.get(x.aircraft_id) || null,
   }));
 
-  const missions = missionsData.map((x) => ({
+  const missions = missionRows.map((x) => ({
     ...x,
     // Normalize database field names to the UI's career model.
     reward_credits: x.reward_credits ?? x.base_reward ?? 0,
