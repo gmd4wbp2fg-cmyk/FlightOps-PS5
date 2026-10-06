@@ -815,23 +815,44 @@ function missions() {
   );
 }
 async function loadActiveMissionDirect() {
-  if (!sb || !state.session) return false;
-  const uid = state.session.user.id;
-  const direct = await sb.from("active_missions").select("*").eq("pilot_id", uid).order("accepted_at", { ascending: false }).limit(1).maybeSingle();
-  if (direct.error) {
-    state.loadErrors = [...(state.loadErrors || []), "active mission: " + (direct.error.message || "request failed")];
+  if (!sb) return false;
+  const userResult = await sb.auth.getUser();
+  if (userResult.error || !userResult.data?.user) {
+    state.active = null;
+    state.loadErrors = [...(state.loadErrors || []), "Active mission: Supabase session is not authenticated."];
     return false;
   }
-  const active = direct.data && typeof direct.data === "object" ? direct.data : null;
+  const uid = userResult.data.user.id;
+  state.session = { ...(state.session || {}), user: userResult.data.user };
+
+  let active = null;
+  const direct = await sb
+    .from("active_missions")
+    .select("*")
+    .eq("pilot_id", uid)
+    .order("accepted_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!direct.error) active = direct.data || null;
+
+  if (!active) {
+    const rpc = await sb.rpc("get_active_mission_for_current_pilot");
+    if (!rpc.error && rpc.data && typeof rpc.data === "object") active = rpc.data;
+  }
+
   if (!active) {
     state.active = null;
+    state.loadErrors = [...(state.loadErrors || []), "Active mission: no active contract was returned for the signed-in pilot."];
     return false;
   }
+
   let mission = state.missions.find((m) => String(m.id) === String(active.mission_id)) || null;
   if (!mission) {
     const missionResult = await sb.from("missions").select("*").eq("id", active.mission_id).maybeSingle();
     if (!missionResult.error) mission = missionResult.data || null;
   }
+
   active.missions = mission;
   active.aircraft_master =
     state.aircraft.find((a) => String(a.aircraft_id) === String(active.aircraft_id))?.aircraft_master ||
