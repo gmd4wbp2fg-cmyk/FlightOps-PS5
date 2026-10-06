@@ -706,7 +706,7 @@ function activeView() {
   return `<section class="hero"><div><div class="eyebrow">Active Mission • Dispatch</div><h1>${esc(missionTitle(m))}</h1><p>${esc(m.mission_code || m.id)} • ${esc(route(m))}</p></div><div><div class="label">Contract Value</div><div class="money">${num(m.reward_credits || m.credits)} Cr</div></div></section>
   <div class="grid">
     <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Mission Card</div><h2>Ready for departure</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> DISPATCHED</div></div><div class="callout"><div class="eyebrow">${missionStoryLead(m)}</div><div class="small" style="margin-top:4px">MISSION STORY • ${missionStoryTitle(m)}</div><p style="margin:6px 0 0">${missionStory(m)}</p><p class="small" style="margin:10px 0 0">${missionStoryFooter(m)}</p></div><div class="details">
-      <div class="detail"><div class="label">Aircraft</div><strong>${esc(aircraftName(a))}</strong></div>
+      <div class="detail"><div class="label">Aircraft</div><strong>${multipleAircraft && !selectedId ? "SELECT AIRCRAFT BEFORE ACCEPTING" : esc(aircraftName(a))}</strong></div>
       <div class="detail"><div class="label">Route</div><strong>${esc(route(m))}</strong></div>
       <div class="detail"><div class="label">Distance</div><strong>${esc(m.distance_nm || m.distance || "—")} NM</strong></div>
       <div class="detail"><div class="label">Base XP</div><strong>+${num(m.reward_xp || m.xp)} XP</strong></div>
@@ -819,8 +819,11 @@ function brief() {
   if (!m) { state.page = "missions"; return missionList(); }
   const choices = missionAircraftChoices(m);
   const ownedChoices = choices.filter((a) => state.aircraft.some((owned) => (owned.aircraft_id || owned.aircraft_master?.id) === a.id));
-  const selectedId = state.selectedAircraftId || ownedChoices[0]?.id || m.required_aircraft_id;
-  const a = ownedChoices.find((x) => x.id === selectedId) || m.aircraft_master || m;
+  const multipleAircraft = ownedChoices.length > 1;
+  const selectedId = multipleAircraft
+    ? state.selectedAircraftId
+    : (state.selectedAircraftId || ownedChoices[0]?.id || m.required_aircraft_id);
+  const a = ownedChoices.find((x) => x.id === selectedId) || (multipleAircraft ? {} : (m.aircraft_master || m));
   const q = m.required_qualification?.code || m.required_qualification_code || "Pilot qualification";
   const planning = m.planning_level || (m.required_aircraft_id === "c172" ? "Suggested planning" : "Pilot planning");
   const legs = missionLegs(m);
@@ -883,7 +886,7 @@ function brief() {
       <p class="copy"><b>Weather requirement:</b> Live Weather only.</p>
     </div>
     <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">06 • Pilot Responsibilities</div><h2>Before You Accept</h2></div><div class="ops-route-chip">FLIGHTOPS STANDARD</div></div>
-    <div class="callout"><b>Aircraft choice:</b> This mission has ${ownedChoices.length || 1} eligible aircraft option${ownedChoices.length === 1 ? "" : "s"}. Choose which aircraft you want to use.</div>
+    <div class="callout"><b>Aircraft choice:</b> This mission has ${ownedChoices.length || 1} eligible aircraft option${ownedChoices.length === 1 ? "" : "s"}. ${ownedChoices.length > 1 ? "Select the aircraft you want to use before accepting the mission." : "The eligible aircraft is shown below."}</div>
     <div class="fleet">${ownedChoices.map((x) => `<button type="button" class="plane choice ${selectedId===x.id?"selected":""}" data-aircraft-choice="${esc(x.id)}"><b>${esc(x.manufacturer)} ${esc(x.model)}</b><span class="small">${esc(x.category)} • ${num(x.cruise_kts)} KTAS • ${num(x.range_nm)} NM range</span></button>`).join("")}</div>
       <div class="details">
         <div class="detail"><div class="label">1</div><strong>Verify aircraft</strong><div class="small">Use the assigned/eligible aircraft in MSFS.</div></div>
@@ -1527,7 +1530,10 @@ function bind() {
           state.selected = state.missions.find(
             (m) => String(m.id) === b.dataset.brief,
           );
-          state.selectedAircraftId = missionAircraftChoices(state.selected)[0]?.id || state.selected?.required_aircraft_id || null;
+          const choices = missionAircraftChoices(state.selected).filter((a) =>
+            state.aircraft.some((owned) => (owned.aircraft_id || owned.aircraft_master?.id) === a.id)
+          );
+          state.selectedAircraftId = choices.length === 1 ? choices[0].id : null;
           state.page = "brief";
           render();
         }),
@@ -1633,7 +1639,13 @@ async function accept() {
     )
       throw new Error("This mission is no longer available.");
     const id = state.selected.id;
-    const aircraftId = state.selectedAircraftId || missionAircraftChoices(state.selected)[0]?.id || state.selected.required_aircraft_id;
+    const choices = missionAircraftChoices(state.selected).filter((a) =>
+      state.aircraft.some((owned) => (owned.aircraft_id || owned.aircraft_master?.id) === a.id)
+    );
+    const aircraftId = state.selectedAircraftId || (choices.length === 1 ? choices[0].id : null);
+    if (!aircraftId) {
+      throw new Error("Select an aircraft before accepting this mission.");
+    }
     await rpc("accept_mission", [
       { p_mission_id: id, p_aircraft_id: aircraftId },
       { p_mission_id: id },
