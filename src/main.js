@@ -652,8 +652,23 @@ function missionAircraftChoices(m) {
     : choices;
   return filtered.length ? filtered : (m?.water_operation ? [] : (m?.aircraft_master ? [m.aircraft_master] : []));
 }
+function aircraftUsable(a) {
+  if (!a?.id) return false;
+  const requiredLevel = Number(a.required_level || a.level_required || 1);
+  const requiredQualification = a.required_qualification_id;
+  return (
+    level() >= requiredLevel &&
+    (!requiredQualification || qIds().has(requiredQualification))
+  );
+}
+function ownedMissionAircraft(m) {
+  return missionAircraftChoices(m).filter((a) =>
+    aircraftUsable(a) &&
+    state.aircraft.some((owned) => (owned.aircraft_id || owned.aircraft_master?.id) === a.id)
+  );
+}
 function owns(m) {
-  return missionAircraftChoices(m).some((a) => state.aircraft.some((owned) => (owned.aircraft_id || owned.aircraft_master?.id) === a.id));
+  return ownedMissionAircraft(m).length > 0;
 }
 function eligible(m) {
   const req =
@@ -818,7 +833,7 @@ function brief() {
   const m = state.selected;
   if (!m) { state.page = "missions"; return missionList(); }
   const choices = missionAircraftChoices(m);
-  const ownedChoices = choices.filter((a) => state.aircraft.some((owned) => (owned.aircraft_id || owned.aircraft_master?.id) === a.id));
+  const ownedChoices = ownedMissionAircraft(m);
   const multipleAircraft = ownedChoices.length > 1;
   const selectedId = multipleAircraft
     ? state.selectedAircraftId
@@ -1530,9 +1545,7 @@ function bind() {
           state.selected = state.missions.find(
             (m) => String(m.id) === b.dataset.brief,
           );
-          const choices = missionAircraftChoices(state.selected).filter((a) =>
-            state.aircraft.some((owned) => (owned.aircraft_id || owned.aircraft_master?.id) === a.id)
-          );
+          const choices = ownedMissionAircraft(state.selected);
           state.selectedAircraftId = choices.length === 1 ? choices[0].id : null;
           state.page = "brief";
           render();
@@ -1639,9 +1652,7 @@ async function accept() {
     )
       throw new Error("This mission is no longer available.");
     const id = state.selected.id;
-    const choices = missionAircraftChoices(state.selected).filter((a) =>
-      state.aircraft.some((owned) => (owned.aircraft_id || owned.aircraft_master?.id) === a.id)
-    );
+    const choices = ownedMissionAircraft(state.selected);
     const aircraftId = state.selectedAircraftId || (choices.length === 1 ? choices[0].id : null);
     if (!aircraftId) {
       throw new Error("Select an aircraft before accepting this mission.");
