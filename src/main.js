@@ -1126,8 +1126,7 @@ function crew() {
         esc(activeAssignment.mission?.title || activeAssignment.mission_id) + ' • ' + esc((activeAssignment.mission?.origin_icao || e.home_base_icao || "—") + " → " + (activeAssignment.mission?.destination_icao || "—")) +
         '<br>Aircraft: ' + esc(activeAssignment.aircraft_master?.model || activeAssignment.aircraft_id) +
         '<br><span class="small">Projected contract revenue: ' + num(activeAssignment.mission?.reward_credits || activeAssignment.mission?.base_reward || 0) + ' Cr</span>' +
-        (ownerCanOperate ? '<br><button class="action primary" data-resolve-staff="' + esc(activeAssignment.id) + '">Resolve Employee Flight</button>' :
-          '<br><div class="notice"><b>Owner flight required.</b> Fly a personal mission before this employee contract can be resolved.</div>') +
+        '<br><div class="notice"><b>⏳ EMPLOYEE FLIGHT PENDING</b><br>This employee flight will complete automatically after you complete your next personal flight. You do not need to resolve it manually.</div>' +
         '</div>' :
       (eligible.length && ownerCanOperate ? '<label class="label">Available company contract<select data-staff-contract="' + esc(e.id) + '">' + options +
       '</select></label><button class="action primary" data-dispatch-staff="' + esc(e.id) + '">Dispatch Pilot</button>' :
