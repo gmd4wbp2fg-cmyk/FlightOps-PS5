@@ -1243,12 +1243,15 @@ function crew() {
     const choices = Array.isArray(m.compatible_aircraft) ? m.compatible_aircraft.map((x) => x.id) : [];
     const allowed = choices.length ? choices.includes(ac.id) : (m.required_aircraft_id ? m.required_aircraft_id === ac.id : true);
     const req = String(m.required_qualification_id || "").toUpperCase();
-    const qual = String(employee?.qualification_id || "").toUpperCase();
+    const qualCodes = new Set(
+      staffQualificationCodes(employee?.id).map((x) => String(x || "").toUpperCase()),
+    );
     const qualificationOk =
       !req ||
-      req === qual ||
-      (req === "PPL" && qual === "CPL") ||
-      (req === "IR" && qual === "CPL");
+      (req === "PPL" && (qualCodes.has("PPL") || qualCodes.has("CPL"))) ||
+      (req === "CPL" && qualCodes.has("CPL")) ||
+      (req === "IR" && qualCodes.has("IR")) ||
+      (["MULTI", "TURBOPROP", "JET", "LONG"].includes(req) && qualCodes.has(req));
     const baseOk = !employee?.home_base_icao || !pa.base_icao || pa.base_icao === employee.home_base_icao;
     return allowed && qualificationOk && baseOk;
   });
@@ -1294,7 +1297,7 @@ function crew() {
       }).join("");
       const firstFit = eligible.length ? employeeFitScore(e, eligible[0]) : 0;
       return '<div class="card s6 ops-card"><div class="eyebrow">READY FOR DISPATCH</div><h2>' + esc(e.employee_name) +
-        '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • Level ' + num(e.employee_level || 1) + ' • ' + esc(e.qualification_id) + ' • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || '—') + '</p>' +
+        '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • Level ' + num(e.employee_level || 1) + ' • ' + staffQualificationText(e.id) + ' • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || '—') + '</p>' +
         (eligible.length && ownerCanOperate ? '<label class="label">Available company contract<select data-staff-contract="' + esc(e.id) + '">' + options +
         '</select></label><div class="small">Pilot profile match: <b>' + firstFit + '% — ' + employeeFitLabel(firstFit) + '</b>. The selected pilot profile influences company performance.</div><button class="action primary" data-dispatch-staff="' + esc(e.id) + '">Dispatch Pilot</button>' :
         (eligible.length && !ownerCanOperate ? '<div class="notice"><b>Owner flight required.</b> Complete a personal flight before dispatching another employee contract.</div>' :
@@ -1305,7 +1308,7 @@ function crew() {
   const staffCards = staff.length
     ? staff.map((e) => {
       const training = activeTraining.find((t) => t.staff_id === e.id);
-      return '<div class="card s4 ops-card"><div class="eyebrow">' + (training ? 'EMPLOYEE PILOT • UNAVAILABLE' : 'EMPLOYEE PILOT') + '</div><h2>' + esc(e.employee_name) + '</h2><p class="copy">' + esc(e.qualification_id) + ' • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || "—") + '</p><div class="details"><div class="detail"><div class="label">Level</div><strong>' + num(e.employee_level || 1) + '</strong></div><div class="detail"><div class="label">Company flights</div><strong>' + num(e.company_flights) + '</strong></div><div class="detail"><div class="label">Employee XP</div><strong>' + num(e.employee_xp) + '</strong></div><div class="detail"><div class="label">Salary</div><strong>' + num(e.monthly_salary) + ' Cr / month</strong></div></div>' + (training ? '<div class="notice"><b>🎓 IN TRAINING ACADEMY</b><br>' + esc(training.program?.name || training.program_id || "Training") + '<br><span class="small">Unavailable for company operations until training is completed.</span></div>' : '') + '<div class="small">Reliability ' + num(e.reliability) + '% • Safety ' + num(e.safety_score || 0) + '% • ' + num(e.experience_hours) + ' hrs • Credits generated ' + num(e.credits_generated) + ' Cr</div>' + (Number(e.employee_level || 1) >= 10 && Number(e.company_flights || 0) >= 25 && Number(e.employee_xp || 0) >= 35000 ? '<div class="callout"><b>Independent operator path unlocked.</b> This pilot can eventually leave and establish their own company.</div>' : '') + '<button class="action" data-history-staff="' + esc(e.id) + '">View Career History</button> ' + (training ? '<button class="action" disabled title="Pilot is currently attending the Training Academy.">Training • IN ACADEMY</button>' : '<button class="action" data-training-staff="' + esc(e.id) + '">Training</button>') + ' ' + (training ? '<button class="action" disabled title="Pilot cannot be terminated while in training.">Fire Pilot • LOCKED</button>' : '<button class="action" data-fire-staff="' + esc(e.id) + '" data-staff-name="' + esc(e.employee_name) + '">Fire Pilot</button>') + '</div>';
+      return '<div class="card s4 ops-card"><div class="eyebrow">' + (training ? 'EMPLOYEE PILOT • UNAVAILABLE' : 'EMPLOYEE PILOT') + '</div><h2>' + esc(e.employee_name) + '</h2><p class="copy">' + staffQualificationText(e.id) + ' • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || "—") + '</p><div class="details"><div class="detail"><div class="label">Level</div><strong>' + num(e.employee_level || 1) + '</strong></div><div class="detail"><div class="label">Company flights</div><strong>' + num(e.company_flights) + '</strong></div><div class="detail"><div class="label">Employee XP</div><strong>' + num(e.employee_xp) + '</strong></div><div class="detail"><div class="label">Salary</div><strong>' + num(e.monthly_salary) + ' Cr / month</strong></div></div>' + (training ? '<div class="notice"><b>🎓 IN TRAINING ACADEMY</b><br>' + esc(training.program?.name || training.program_id || "Training") + '<br><span class="small">Unavailable for company operations until training is completed.</span></div>' : '') + '<div class="small">Reliability ' + num(e.reliability) + '% • Safety ' + num(e.safety_score || 0) + '% • ' + num(e.experience_hours) + ' hrs • Credits generated ' + num(e.credits_generated) + ' Cr</div>' + (Number(e.employee_level || 1) >= 10 && Number(e.company_flights || 0) >= 25 && Number(e.employee_xp || 0) >= 35000 ? '<div class="callout"><b>Independent operator path unlocked.</b> This pilot can eventually leave and establish their own company.</div>' : '') + '<button class="action" data-history-staff="' + esc(e.id) + '">View Career History</button> ' + (training ? '<button class="action" disabled title="Pilot is currently attending the Training Academy.">Training • IN ACADEMY</button>' : '<button class="action" data-training-staff="' + esc(e.id) + '">Training</button>') + ' ' + (training ? '<button class="action" disabled title="Pilot cannot be terminated while in training.">Fire Pilot • LOCKED</button>' : '<button class="action" data-fire-staff="' + esc(e.id) + '" data-staff-name="' + esc(e.employee_name) + '">Fire Pilot</button>') + '</div>';
     }).join("")
     : '<div class="card s12 ops-card"><h2>No employees yet</h2><p class="copy">Hire a pilot from Recruiting when you are ready.</p></div>';
   const completedOperations = assignments
