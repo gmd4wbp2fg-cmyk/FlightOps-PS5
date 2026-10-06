@@ -324,7 +324,7 @@ function legPurpose(leg, current, count) {
 }
 function nav() {
   $("#nav").innerHTML = state.session
-    ? ["home", "missions", "active", "hangar", "pilot", "career", ...(state.staffStatus?.eligible ? ["crew", "recruiting"] : []), ...(state.isAdmin ? ["admin"] : []), "updates", "feedback"]
+    ? ["home", "missions", "active", "hangar", "pilot", "career", ...(state.staffStatus?.eligible ? ["crew", "training", "recruiting"] : []), ...(state.isAdmin ? ["admin"] : []), "updates", "feedback"]
         .map(
           (x) =>
             `<button data-page="${x}" class="${state.page === x ? "active" : ""}">${x[0].toUpperCase() + x.slice(1)}</button>`,
@@ -1234,6 +1234,28 @@ function crew() {
   return '<section class="hero"><div><div class="eyebrow">FlightOps Crew & Staff</div><h1>Build your operation.</h1><p>Hire pilots based on experience, qualifications, reliability, and cost — then put them to work on company contracts.</p></div><div class="hero-stat"><b>' + num(s.company_xp || 0) + '</b><span>Company XP</span></div></section><section class="grid"><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Hiring Status</div><h2>Employee pilots</h2></div><div class="ops-route-chip">' + num(s.active_staff || 0) + ' / ' + num(s.max_staff || 0) + '</div></div><p class="copy">Your first employee pilot costs one month of salary up front. Company assignments generate company revenue, company XP, and employee experience.</p><div class="callout"><b>Company revenue:</b> ' + num(s.company_revenue || 0) + ' Cr<br><span class="small"><b>Owner activity:</b> ' + num(staffOps.owner_flights || 0) + ' personal flights • ' + num(staffOps.employee_flights || 0) + ' employee flights resolved • <b>' + num(staffOps.available_operation_slots || 0) + '</b> employee operation slot(s) available.</span></div></div><div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Dispatch Board</div><h2>Put your staff to work</h2></div></div></div>' + (activeDispatchBlocks || '<div class="card s12 ops-card"><p class="copy">No employee is currently in flight.</p></div>') + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Available Staff</div><h2>Ready for dispatch</h2></div></div></div>' + (availableStaffBlocks || '<div class="card s12 ops-card"><p class="copy">No employees are currently available for another company contract.</p></div>') + completedOperationsCard + trainingDashboard + (trainingOptions ? '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Development Options</div><h2>Available Training</h2></div></div></div>' + trainingOptions : '') + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Your Staff</div><h2>Current employees</h2></div></div></div>' + staffCards + '</section>';
 }
 
+function training() {
+  const staff = state.staff || [];
+  const rows = (state.staffTraining || []).map((t) => ({
+    ...t,
+    employee: staff.find((e) => e.id === t.staff_id),
+    program: t.staff_training_programs || state.staffTrainingPrograms.find((p) => p.id === t.program_id) || {},
+  }));
+  const active = rows.filter((t) => t.status === "active").sort((a,b) => new Date(a.completes_at || 0) - new Date(b.completes_at || 0));
+  const completed = rows.filter((t) => t.status === "completed").slice(0, 12);
+  const activeRows = active.length ? active.map(t => {
+    const ready = t.completes_at && new Date(t.completes_at) <= new Date();
+    return '<div class="historyrow"><div><b>' + esc(t.employee?.employee_name || "Employee pilot") + '</b><br><span class="small">' + esc(t.program?.name || t.program_id || "Training") + '</span></div><div><b>' + (ready ? "READY TO COMPLETE" : new Date(t.completes_at).toLocaleDateString()) + '</b><br><span class="small">Started ' + new Date(t.started_at).toLocaleDateString() + '</span></div><div>' + (ready ? '<button class="action primary" data-complete-training="' + esc(t.id) + '">Complete Training</button>' : '<span class="small">' + num(t.cost_paid || 0) + ' Cr paid</span>') + '</div></div>';
+  }).join("") : '<div class="callout">No employee training is currently active.</div>';
+  const completedRows = completed.map(t => '<div class="historyrow"><div><b>' + esc(t.employee?.employee_name || "Employee pilot") + '</b><br><span class="small">' + esc(t.program?.name || t.program_id || "Training") + '</span></div><div class="small">Completed ' + (t.completed_at ? new Date(t.completed_at).toLocaleDateString() : "—") + '<br>+' + num(t.xp_reward || 0) + ' XP</div></div>').join("");
+  const options = staff.map(e => {
+    if (rows.some(t => t.staff_id === e.id && t.status === "active")) return "";
+    const eligible = (state.staffTrainingPrograms || []).filter(p => Number(e.employee_level || 1) >= Number(p.required_level || 1));
+    if (!eligible.length) return "";
+    return '<div class="card s4 ops-card"><div class="eyebrow">TRAINING AVAILABLE</div><h2>' + esc(e.employee_name) + '</h2><p class="copy">Level ' + num(e.employee_level || 1) + ' • ' + esc(e.qualification_id || "—") + '</p><div class="details">' + eligible.map(p => '<div class="detail"><div class="label">' + esc(p.name) + '</div><strong>' + num(p.cost_credits || 0) + ' Cr</strong><div class="small">' + num(p.duration_days || 0) + ' days • +' + num(p.xp_reward || 0) + ' XP</div><button class="action" data-start-training="' + esc(e.id + "|" + p.id) + '">Start Training</button></div>').join("") + '</div></div>';
+  }).join("");
+  return '<section class="hero"><div><div class="eyebrow">FlightOps Staff Development</div><h1>Training Center.</h1><p>Develop your employee pilots through structured training programs. Training costs company credits and advances employee career progression.</p></div><div class="hero-stat"><b>' + num(active.length) + '</b><span>Active programs</span></div></section><section class="grid"><div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Training Management</div><h2>Active Training</h2></div><div class="ops-route-chip">' + num(active.length) + ' ACTIVE</div></div><div class="card ops-card">' + activeRows + '</div></div>' + (options ? '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Development Options</div><h2>Available Training</h2></div><div class="ops-route-chip">CAREER DEVELOPMENT</div></div></div>' + options : '<div class="s12"><div class="callout">No employees currently meet the requirements for additional training.</div></div>') + (completedRows ? '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Training History</div><h2>Recently Completed</h2></div></div><div class="card ops-card">' + completedRows + '</div></div>' : '') + '</section>';
+}
 
 function recruiting() {
   const s = state.staffStatus || {};
@@ -1281,6 +1303,7 @@ function render() {
           pilot,
           career,
           crew,
+          training,
           recruiting,
           admin: admin,
           updates,
