@@ -815,6 +815,7 @@ function missions() {
   );
 }
 async function loadActiveMissionDirect() {
+  const activeLoadToken = ++loadSequence;
   if (!sb) return false;
   const userResult = await sb.auth.getUser();
   if (userResult.error || !userResult.data?.user) {
@@ -858,6 +859,7 @@ async function loadActiveMissionDirect() {
     state.aircraft.find((a) => String(a.aircraft_id) === String(active.aircraft_id))?.aircraft_master ||
     mission?.aircraft_master ||
     null;
+  if (activeLoadToken !== loadSequence) return false;
   state.active = active;
   return true;
 }
