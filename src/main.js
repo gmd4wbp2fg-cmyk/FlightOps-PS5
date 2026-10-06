@@ -822,7 +822,7 @@ function missions() {
     (mission) =>
       !assigned.has(missionId(mission)) &&
       eligible(mission) &&
-  
+      missionOriginAvailable(mission) &&
       (mission.is_repeatable === true || !completed.has(missionId(mission))),
   );
 }
