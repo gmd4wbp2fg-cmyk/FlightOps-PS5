@@ -47,6 +47,8 @@ const state = {
   staff: [],
   staffAssignments: [],
   staffOpsStatus: null,
+  staffTraining: [],
+  staffTrainingPrograms: [],
   isAdmin: false,
   adminOverview: null,
   adminStaff: [],
@@ -561,6 +563,19 @@ async function load() {
   state.achievements = achievementsData || [];
   state.announcements = announcementsData || [];
   state.staff = staffData || [];
+  const trainingStaffIds = state.staff.map((x) => x.id).filter(Boolean);
+  const trainingResult = trainingStaffIds.length
+    ? await sb.from("staff_training").select("*,staff_training_programs(*)").eq("owner_pilot_id", uid).in("staff_id", trainingStaffIds).order("started_at", { ascending: false })
+    : { data: [], error: null };
+  if (trainingResult.error) {
+    state.loadErrors.push(`staff training: ${trainingResult.error.message || "request failed"}`);
+  }
+  state.staffTraining = trainingResult.data || [];
+  const trainingProgramsResult = await sb.from("staff_training_programs").select("*").eq("active", true).order("required_level", { ascending: true });
+  if (trainingProgramsResult.error) {
+    state.loadErrors.push(`training programs: ${trainingProgramsResult.error.message || "request failed"}`);
+  }
+  state.staffTrainingPrograms = trainingProgramsResult.data || [];
   const staffBoardResult = await sb.rpc("staff_assignment_board");
   if (staffBoardResult.error) {
     state.loadErrors.push(`staff assignment board: ${staffBoardResult.error.message || "request failed"}`);
@@ -1142,6 +1157,30 @@ function crew() {
     return allowed && qualificationOk && baseOk;
   });
   const assignments = state.staffAssignments || [];
+  const trainingRows = (state.staffTraining || []).map((t) => {
+    const employee = staff.find((e) => e.id === t.staff_id);
+    const program = t.staff_training_programs || state.staffTrainingPrograms.find((p) => p.id === t.program_id) || {};
+    return { ...t, employee, program };
+  });
+  const activeTraining = trainingRows.filter((t) => t.status === "active").sort((a,b) => new Date(a.completes_at || 0) - new Date(b.completes_at || 0));
+  const completedTraining = trainingRows.filter((t) => t.status === "completed").slice(0, 8);
+  const trainingDashboard = `<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Staff Development</div><h2>Training Dashboard</h2></div><div class="ops-route-chip">${activeTraining.length} ACTIVE</div></div>
+  <div class="card ops-card">
+    <p class="copy">Manage employee development without opening each employee. Training costs company credits and advances the employee's career progression.</p>
+    ${activeTraining.length ? `<div class="historyrow"><div><b>Active training</b></div><div class="small">Completion</div></div>${activeTraining.map(t => {
+      const complete = t.completes_at && new Date(t.completes_at) <= new Date();
+      return `<div class="historyrow"><div><b>${esc(t.employee?.employee_name || "Employee pilot")}</b><br><span class="small">${esc(t.program?.name || t.program_id || "Training")}</span></div><div><b>${complete ? "READY TO COMPLETE" : new Date(t.completes_at).toLocaleDateString()}</b><br><span class="small">Started ${new Date(t.started_at).toLocaleDateString()}</span></div><div>${complete ? '<button class="action primary" data-complete-training="' + esc(t.id) + '">Complete Training</button>' : '<span class="small">' + num(t.cost_paid || 0) + ' Cr paid</span>'}</div></div>`;
+    }).join("")}` : '<div class="callout">No employee training is currently active.</div>'}
+    ${completedTraining.length ? `<div class="eyebrow" style="margin-top:18px">Recent Completed Training</div>${completedTraining.map(t => `<div class="historyrow"><div><b>${esc(t.employee?.employee_name || "Employee pilot")}</b><br><span class="small">${esc(t.program?.name || t.program_id || "Training")}</span></div><div class="small">Completed ${t.completed_at ? new Date(t.completed_at).toLocaleDateString() : "—"}<br>+${num(t.xp_reward || 0)} XP</div></div>`).join("")}` : ""}
+  </div></div>`;
+  const trainingOptions = staff.map(e => {
+    const active = trainingRows.find(t => t.staff_id === e.id && t.status === "active");
+    if (active) return "";
+    const eligible = (state.staffTrainingPrograms || []).filter(p => Number(e.employee_level || 1) >= Number(p.required_level || 1));
+    if (!eligible.length) return "";
+    return `<div class="card s4 ops-card"><div class="eyebrow">TRAINING AVAILABLE</div><h2>${esc(e.employee_name)}</h2><p class="copy">Level ${num(e.employee_level || 1)} • ${esc(e.qualification_id || "—")}</p><div class="details">${eligible.map(p => `<div class="detail"><div class="label">${esc(p.name)}</div><strong>${num(p.cost_credits || 0)} Cr</strong><div class="small">${num(p.duration_days || 0)} days • +${num(p.xp_reward || 0)} XP</div><button class="action" data-start-training="${esc(e.id)}|${esc(p.id)}">Start Training</button></div>`).join("")}</div></div>`;
+  }).join("");
+
   const staffOps = state.staffOpsStatus || {};
   const ownerCanOperate = staffOps.can_dispatch_employee !== false;
   const activeDispatchBlocks = staff
@@ -1192,7 +1231,7 @@ function crew() {
     ? '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Company Activity</div><h2>Completed employee operations</h2></div><div class="ops-route-chip">AUTO-RESOLVED</div></div><div class="card ops-card">' + completedOperations + '</div></div>'
     : "";
   const candidateCards = candidates.map((c) => '<div class="card s4 ops-card"><div class="eyebrow">AVAILABLE PILOT</div><h2>' + esc(c.candidate_name) + '</h2><p class="copy">' + num(c.experience_hours) + ' hrs • ' + esc(c.qualification_id) + '</p><div class="details"><div class="detail"><div class="label">Specialties</div><strong>' + esc(Array.isArray(c.specialties) ? c.specialties.join(" • ") : "") + '</strong></div><div class="detail"><div class="label">Reliability</div><strong>' + num(c.reliability) + '%</strong></div><div class="detail"><div class="label">Safety record</div><strong>' + num(c.safety_score) + '%</strong></div><div class="detail"><div class="label">Salary</div><strong>' + num(c.monthly_salary) + ' Cr / month</strong></div></div><button class="primary" data-hire-staff="' + esc(c.id) + '">Hire Pilot</button></div>').join("");
-  return '<section class="hero"><div><div class="eyebrow">FlightOps Crew & Staff</div><h1>Build your operation.</h1><p>Hire pilots based on experience, qualifications, reliability, and cost — then put them to work on company contracts.</p></div><div class="hero-stat"><b>' + num(s.company_xp || 0) + '</b><span>Company XP</span></div></section><section class="grid"><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Hiring Status</div><h2>Employee pilots</h2></div><div class="ops-route-chip">' + num(s.active_staff || 0) + ' / ' + num(s.max_staff || 0) + '</div></div><p class="copy">Your first employee pilot costs one month of salary up front. Company assignments generate company revenue, company XP, and employee experience.</p><div class="callout"><b>Company revenue:</b> ' + num(s.company_revenue || 0) + ' Cr<br><span class="small"><b>Owner activity:</b> ' + num(staffOps.owner_flights || 0) + ' personal flights • ' + num(staffOps.employee_flights || 0) + ' employee flights resolved • <b>' + num(staffOps.available_operation_slots || 0) + '</b> employee operation slot(s) available.</span></div></div><div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Dispatch Board</div><h2>Put your staff to work</h2></div></div></div>' + (activeDispatchBlocks || '<div class="card s12 ops-card"><p class="copy">No employee is currently in flight.</p></div>') + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Available Staff</div><h2>Ready for dispatch</h2></div></div></div>' + (availableStaffBlocks || '<div class="card s12 ops-card"><p class="copy">No employees are currently available for another company contract.</p></div>') + completedOperationsCard + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Your Staff</div><h2>Current employees</h2></div></div></div>' + staffCards + '</section>';
+  return '<section class="hero"><div><div class="eyebrow">FlightOps Crew & Staff</div><h1>Build your operation.</h1><p>Hire pilots based on experience, qualifications, reliability, and cost — then put them to work on company contracts.</p></div><div class="hero-stat"><b>' + num(s.company_xp || 0) + '</b><span>Company XP</span></div></section><section class="grid"><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Hiring Status</div><h2>Employee pilots</h2></div><div class="ops-route-chip">' + num(s.active_staff || 0) + ' / ' + num(s.max_staff || 0) + '</div></div><p class="copy">Your first employee pilot costs one month of salary up front. Company assignments generate company revenue, company XP, and employee experience.</p><div class="callout"><b>Company revenue:</b> ' + num(s.company_revenue || 0) + ' Cr<br><span class="small"><b>Owner activity:</b> ' + num(staffOps.owner_flights || 0) + ' personal flights • ' + num(staffOps.employee_flights || 0) + ' employee flights resolved • <b>' + num(staffOps.available_operation_slots || 0) + '</b> employee operation slot(s) available.</span></div></div><div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Dispatch Board</div><h2>Put your staff to work</h2></div></div></div>' + (activeDispatchBlocks || '<div class="card s12 ops-card"><p class="copy">No employee is currently in flight.</p></div>') + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Available Staff</div><h2>Ready for dispatch</h2></div></div></div>' + (availableStaffBlocks || '<div class="card s12 ops-card"><p class="copy">No employees are currently available for another company contract.</p></div>') + completedOperationsCard + trainingDashboard + (trainingOptions ? '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Development Options</div><h2>Available Training</h2></div></div></div>' + trainingOptions : '') + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Your Staff</div><h2>Current employees</h2></div></div></div>' + staffCards + '</section>';
 }
 
 
@@ -1309,42 +1348,6 @@ function bind() {
           render();
           err(e, "Pilot hiring failed.");
         }
-      };
-    });
-
-  $("#app")
-    .querySelectorAll("[data-training-staff]")
-    .forEach((b) => {
-      b.onclick = async () => {
-        const rows = await loadTraining(b.dataset.trainingStaff);
-        const active = rows.find(x => x.status === "active");
-        if (active) {
-          const when = new Date(active.completes_at).toLocaleString();
-          alert((active.staff_training_programs?.name || active.program_id) + "\nTraining in progress.\nCompletes: " + when);
-          return;
-        }
-        const programs = [
-          ["INSTRUMENT","Instrument Rating",8000,14,2],
-          ["MULTI","Multi-Engine Rating",18000,21,4],
-          ["TURBOPROP","Turboprop Qualification",25000,30,5],
-          ["JET","Jet Qualification",50000,45,9],
-          ["BUSH","Bush Operations",7000,14,3]
-        ];
-        const e = state.staff.find(x => x.id === b.dataset.trainingStaff);
-        const eligible = programs.filter(x => Number(e?.employee_level || 1) >= x[4]);
-        if (!eligible.length) return toast("No training programs are currently available for this pilot.", true);
-        const choices = eligible.map((x,i) => (i+1) + ". " + x[1] + " — " + num(x[2]) + " Cr / " + x[3] + " days").join("\n");
-        const answer = prompt("Choose training for " + (e?.employee_name || "pilot") + ":\n\n" + choices + "\n\nEnter the program number:");
-        const index = Number(answer) - 1;
-        const pick = eligible[index];
-        if (!pick) return;
-        if (!confirm("Start " + pick[1] + "?\n\nCost: " + num(pick[2]) + " Cr\nDuration: " + pick[3] + " days\n\nThis will be recorded in the pilot's career history.")) return;
-        state.submitting = true; render();
-        try {
-          const result = await sb.rpc("start_staff_training",{p_staff_id:e.id,p_program_id:pick[0]});
-          if(result.error) throw result.error;
-          await load(); render(); toast(pick[1] + " started.");
-        } catch(errx) { state.submitting=false; render(); err(errx,"Training could not be started."); }
       };
     });
 
