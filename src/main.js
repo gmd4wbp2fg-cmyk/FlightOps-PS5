@@ -39,6 +39,7 @@ const state = {
   loading: false,
   loadErrors: [],
   submitting: false,
+  recruitProfileId: null,
   feedbackRating: 0,
   announcements: [],
   staffStatus: null,
@@ -65,6 +66,13 @@ const state = {
     liveWeatherConfirm: false,
   },
 };
+function recruitAvatar(c) {
+  const seed = encodeURIComponent(c?.candidate_name || c?.employee_name || "Pilot");
+  return "https://api.dicebear.com/9.x/avataaars/svg?seed=" + seed;
+}
+function recruitStyleLabel(style) {
+  return ({bush:"Bush / Backcountry", veteran:"Veteran Operator", turboprop:"Turboprop / Cargo", regional:"Regional / Utility", charter:"Charter / Passenger", utility:"Utility / Cargo", professional:"Professional Pilot"})[style] || "Professional Pilot";
+}
 function toast(message, bad = false) {
   const t = $("#toast");
   t.textContent = message;
@@ -1166,7 +1174,10 @@ function recruiting() {
   const s = state.staffStatus || {};
   const candidates = state.staffCandidates || [];
   const candidateCards = candidates.length
-    ? candidates.map((c) => '<div class="card s4 ops-card"><div class="eyebrow">AVAILABLE PILOT</div><h2>' + esc(c.candidate_name) + '</h2><p class="copy">' + num(c.experience_hours) + ' hrs • ' + esc(c.qualification_id) + '</p><div class="details"><div class="detail"><div class="label">Specialties</div><strong>' + esc(Array.isArray(c.specialties) ? c.specialties.join(" • ") : "") + '</strong></div><div class="detail"><div class="label">Reliability</div><strong>' + num(c.reliability) + '%</strong></div><div class="detail"><div class="label">Safety record</div><strong>' + num(c.safety_score) + '%</strong></div><div class="detail"><div class="label">Salary</div><strong>' + num(c.monthly_salary) + ' Cr / month</strong></div></div><button class="primary" data-hire-staff="' + esc(c.id) + '">Hire Pilot</button></div>').join("")
+    ? candidates.map((c) => {
+      const open = state.recruitProfileId === c.id;
+      return '<div class="card s4 ops-card"><div style="display:flex;gap:14px;align-items:center"><img src="' + recruitAvatar(c) + '" alt="" style="width:78px;height:78px;border-radius:50%;background:#10243b;border:1px solid #315b7e;object-fit:cover"><div><div class="eyebrow">AVAILABLE PILOT</div><h2>' + esc(c.candidate_name) + '</h2><p class="copy">' + num(c.experience_hours) + ' hrs • ' + esc(c.qualification_id) + '</p></div></div><div class="small" style="margin-top:10px">' + esc(recruitStyleLabel(c.avatar_style)) + '</div><div class="details"><div class="detail"><div class="label">Specialties</div><strong>' + esc(Array.isArray(c.specialties) ? c.specialties.join(" • ") : "") + '</strong></div><div class="detail"><div class="label">Reliability</div><strong>' + num(c.reliability) + '%</strong></div><div class="detail"><div class="label">Safety record</div><strong>' + num(c.safety_score) + '%</strong></div><div class="detail"><div class="label">Salary</div><strong>' + num(c.monthly_salary) + ' Cr / month</strong></div></div>' + (open ? '<div class="callout"><b>Pilot Bio</b><br>' + esc(c.bio || "Professional pilot seeking the next opportunity.") + '</div>' : '') + '<button class="action" data-view-recruit="' + esc(c.id) + '">' + (open ? "Hide Bio" : "View Bio") + '</button> <button class="primary" data-hire-staff="' + esc(c.id) + '">Hire Pilot</button></div>';
+    }).join("")
     : '<div class="card s12 ops-card"><h2>No candidates available</h2><p class="copy">The recruiting board will refresh with new pilots as candidates become available.</p></div>';
   return '<section class="hero"><div><div class="eyebrow">FlightOps Recruiting</div><h1>Find your next pilot.</h1><p>Recruitment is separate from Crew operations. Review candidates here, then manage hired employees from the Crew tab.</p></div><div class="hero-stat"><b>' + num(s.active_staff || 0) + ' / ' + num(s.max_staff || 0) + '</b><span>Staff positions</span></div></section><section class="grid"><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Recruiting Status</div><h2>Hiring capacity</h2></div><div class="ops-route-chip">' + num(s.active_staff || 0) + ' / ' + num(s.max_staff || 0) + '</div></div><p class="copy">Your first employee pilot costs one month of salary up front. Choose pilots based on experience, qualification, specialties, reliability, safety record, and cost.</p><div class="callout"><b>Company revenue:</b> ' + num(s.company_revenue || 0) + ' Cr<br><span class="small"><b>Hiring unlocked:</b> Level ' + num(s.level || state.profile?.level || 1) + ' • <b>' + num(s.max_staff || 0) + '</b> staff positions available.</span></div></div><div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Hiring Board</div><h2>Choose your pilot</h2></div><div class="ops-route-chip">RECRUITING</div></div></div>' + candidateCards + '</section>';
 }
@@ -1235,6 +1246,15 @@ function bind() {
           render();
         }),
     );
+  $("#app")
+    .querySelectorAll("[data-view-recruit]")
+    .forEach((b) => {
+      b.onclick = () => {
+        state.recruitProfileId = state.recruitProfileId === b.dataset.viewRecruit ? null : b.dataset.viewRecruit;
+        render();
+      };
+    });
+
   $("#app")
     .querySelectorAll("[data-hire-staff]")
     .forEach((b) => {
