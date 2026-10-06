@@ -1056,7 +1056,13 @@ function crew() {
     const allowed = choices.length ? choices.includes(ac.id) : (m.required_aircraft_id ? m.required_aircraft_id === ac.id : true);
     const req = String(m.required_qualification_id || "").toUpperCase();
     const qual = String(employee?.qualification_id || "").toUpperCase();
-    return allowed && (!req || req === qual);
+    const qualificationOk =
+      !req ||
+      req === qual ||
+      (req === "PPL" && qual === "CPL") ||
+      (req === "IR" && qual === "CPL");
+    const baseOk = !employee?.home_base_icao || !pa.base_icao || pa.base_icao === employee.home_base_icao;
+    return allowed && qualificationOk && baseOk;
   });
   const dispatchBlocks = staff.map((e) => {
     const eligible = missions.filter((m) => aircraftForMission(m, e).length).slice(0, 6);
