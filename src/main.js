@@ -1865,12 +1865,11 @@ async function accept() {
     if (!selectedBase || selectedBase !== missionOrigin) {
       throw new Error("This aircraft is not currently based at this mission origin.");
     }
-    await rpc("accept_mission", [
-      { p_mission_id: id, p_aircraft_id: aircraftId },
-      { p_mission_id: id },
-      { mission_id: id, aircraft_id: aircraftId },
-      { mission_id: id },
-    ]);
+    const result = await sb.rpc("accept_mission", {
+      p_mission_id: id,
+      p_aircraft_id: aircraftId,
+    });
+    if (result.error) throw result.error;
     toast("Mission accepted. It will remain active after refresh.");
     await load();
     state.page = "home";
