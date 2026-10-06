@@ -340,12 +340,12 @@ function nav() {
     .forEach(
       (b) =>
         (b.onclick = async () => {
+          if (b.dataset.page === "active") {
+            await openActivePage();
+            return;
+          }
           state.page = b.dataset.page;
           render();
-          if (state.page === "active") {
-            await loadActiveMissionDirect();
-            if (state.page === "active") render();
-          }
         }),
     );
   $('[data-action="logout"]')?.addEventListener("click", logout);
@@ -1507,8 +1507,8 @@ function editProfile() {
 }
 function render() {
   nav();
-  $("#app").innerHTML = !state.session
-    ? auth()
+  const pageRenderer = !state.session
+    ? auth
     : (
         {
           home,
@@ -1527,9 +1527,18 @@ function render() {
           report,
           edit: editProfile,
         }[state.page] || home
-      )();
+      );
+  $("#app").innerHTML = pageRenderer();
   bind();
 }
+async function openActivePage() {
+  state.page = "active";
+  render();
+  await loadActiveMissionDirect();
+  state.page = "active";
+  render();
+}
+
 function captureReportInputs() {
   const minutes = $("#flight-minutes")?.value;
   const distance = $("#distance-nm")?.value;
