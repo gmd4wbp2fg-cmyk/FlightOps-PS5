@@ -329,7 +329,7 @@ function nav() {
     ? ["home", "missions", "active", "hangar", "pilot", "career", ...(state.staffStatus?.eligible ? ["crew", "training", "recruiting"] : []), ...(state.isAdmin ? ["admin"] : []), "updates", "feedback"]
         .map(
           (x) =>
-            `<button data-page="${x}" class="${state.page === x ? "active" : ""}">${x[0].toUpperCase() + x.slice(1)}</button>`,
+            `<button data-page="${x}" class="${state.page === x ? "active" : ""}">${x === "training" ? "Training Academy" : x[0].toUpperCase() + x.slice(1)}</button>`,
         )
         .join("") + '<button data-action="logout">Logout</button>'
     : "";
