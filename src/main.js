@@ -68,7 +68,7 @@ const state = {
 };
 function recruitAvatar(c) {
   const seed = encodeURIComponent(c?.candidate_name || c?.employee_name || "Pilot");
-  return "https://api.dicebear.com/9.x/avataaars/svg?seed=" + seed;
+  return "https://api.dicebear.com/9.x/personas/svg?seed=" + seed + "&backgroundColor=0b1726";
 }
 function recruitStyleLabel(style) {
   return ({bush:"Bush / Backcountry", veteran:"Veteran Operator", turboprop:"Turboprop / Cargo", regional:"Regional / Utility", charter:"Charter / Passenger", utility:"Utility / Cargo", professional:"Professional Pilot"})[style] || "Professional Pilot";
