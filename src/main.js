@@ -40,6 +40,8 @@ const state = {
   loadErrors: [],
   submitting: false,
   recruitProfileId: null,
+  trainingStaffId: null,
+  trainingProgramId: null,
   feedbackRating: 0,
   announcements: [],
   staffStatus: null,
@@ -1219,7 +1221,7 @@ function crew() {
     })
     .join("");
   const staffCards = staff.length
-    ? staff.map((e) => '<div class="card s4 ops-card"><div class="eyebrow">EMPLOYEE PILOT</div><h2>' + esc(e.employee_name) + '</h2><p class="copy">' + esc(e.qualification_id) + ' • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || "—") + '</p><div class="details"><div class="detail"><div class="label">Level</div><strong>' + num(e.employee_level || 1) + '</strong></div><div class="detail"><div class="label">Company flights</div><strong>' + num(e.company_flights) + '</strong></div><div class="detail"><div class="label">Employee XP</div><strong>' + num(e.employee_xp) + '</strong></div><div class="detail"><div class="label">Salary</div><strong>' + num(e.monthly_salary) + ' Cr / month</strong></div></div><div class="small">Reliability ' + num(e.reliability) + '% • Safety ' + num(e.safety_score || 0) + '% • ' + num(e.experience_hours) + ' hrs • Credits generated ' + num(e.credits_generated) + ' Cr</div>' + (Number(e.employee_level || 1) >= 10 && Number(e.company_flights || 0) >= 25 && Number(e.employee_xp || 0) >= 35000 ? '<div class="callout"><b>Independent operator path unlocked.</b> This pilot can eventually leave and establish their own company.</div>' : '') + '<button class="action" data-history-staff="' + esc(e.id) + '">View Career History</button> <button class="action" data-page="training" data-training-staff="' + esc(e.id) + '">Training</button> <button class="action" data-fire-staff="' + esc(e.id) + '" data-staff-name="' + esc(e.employee_name) + '">Fire Pilot</button></div>').join("")
+    ? staff.map((e) => '<div class="card s4 ops-card"><div class="eyebrow">EMPLOYEE PILOT</div><h2>' + esc(e.employee_name) + '</h2><p class="copy">' + esc(e.qualification_id) + ' • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || "—") + '</p><div class="details"><div class="detail"><div class="label">Level</div><strong>' + num(e.employee_level || 1) + '</strong></div><div class="detail"><div class="label">Company flights</div><strong>' + num(e.company_flights) + '</strong></div><div class="detail"><div class="label">Employee XP</div><strong>' + num(e.employee_xp) + '</strong></div><div class="detail"><div class="label">Salary</div><strong>' + num(e.monthly_salary) + ' Cr / month</strong></div></div><div class="small">Reliability ' + num(e.reliability) + '% • Safety ' + num(e.safety_score || 0) + '% • ' + num(e.experience_hours) + ' hrs • Credits generated ' + num(e.credits_generated) + ' Cr</div>' + (Number(e.employee_level || 1) >= 10 && Number(e.company_flights || 0) >= 25 && Number(e.employee_xp || 0) >= 35000 ? '<div class="callout"><b>Independent operator path unlocked.</b> This pilot can eventually leave and establish their own company.</div>' : '') + '<button class="action" data-history-staff="' + esc(e.id) + '">View Career History</button> <button class="action" data-training-staff="' + esc(e.id) + '">Training</button> <button class="action" data-fire-staff="' + esc(e.id) + '" data-staff-name="' + esc(e.employee_name) + '">Fire Pilot</button></div>').join("")
     : '<div class="card s12 ops-card"><h2>No employees yet</h2><p class="copy">Hire a pilot from Recruiting when you are ready.</p></div>';
   const completedOperations = assignments
     .filter((a) => a.status === "completed")
@@ -1231,7 +1233,43 @@ function crew() {
     ? '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Company Activity</div><h2>Completed employee operations</h2></div><div class="ops-route-chip">AUTO-RESOLVED</div></div><div class="card ops-card">' + completedOperations + '</div></div>'
     : "";
   const candidateCards = candidates.map((c) => '<div class="card s4 ops-card"><div class="eyebrow">AVAILABLE PILOT</div><h2>' + esc(c.candidate_name) + '</h2><p class="copy">' + num(c.experience_hours) + ' hrs • ' + esc(c.qualification_id) + '</p><div class="details"><div class="detail"><div class="label">Specialties</div><strong>' + esc(Array.isArray(c.specialties) ? c.specialties.join(" • ") : "") + '</strong></div><div class="detail"><div class="label">Reliability</div><strong>' + num(c.reliability) + '%</strong></div><div class="detail"><div class="label">Safety record</div><strong>' + num(c.safety_score) + '%</strong></div><div class="detail"><div class="label">Salary</div><strong>' + num(c.monthly_salary) + ' Cr / month</strong></div></div><button class="primary" data-hire-staff="' + esc(c.id) + '">Hire Pilot</button></div>').join("");
-  return '<section class="hero"><div><div class="eyebrow">FlightOps Crew & Staff</div><h1>Build your operation.</h1><p>Hire pilots based on experience, qualifications, reliability, and cost — then put them to work on company contracts.</p></div><div class="hero-stat"><b>' + num(s.company_xp || 0) + '</b><span>Company XP</span></div></section><section class="grid"><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Hiring Status</div><h2>Employee pilots</h2></div><div class="ops-route-chip">' + num(s.active_staff || 0) + ' / ' + num(s.max_staff || 0) + '</div></div><p class="copy">Your first employee pilot costs one month of salary up front. Company assignments generate company revenue, company XP, and employee experience.</p><div class="callout"><b>Company revenue:</b> ' + num(s.company_revenue || 0) + ' Cr<br><span class="small"><b>Owner activity:</b> ' + num(staffOps.owner_flights || 0) + ' personal flights • ' + num(staffOps.employee_flights || 0) + ' employee flights resolved • <b>' + num(staffOps.available_operation_slots || 0) + '</b> employee operation slot(s) available.</span></div></div><div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Dispatch Board</div><h2>Put your staff to work</h2></div></div></div>' + (activeDispatchBlocks || '<div class="card s12 ops-card"><p class="copy">No employee is currently in flight.</p></div>') + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Available Staff</div><h2>Ready for dispatch</h2></div></div></div>' + (availableStaffBlocks || '<div class="card s12 ops-card"><p class="copy">No employees are currently available for another company contract.</p></div>') + completedOperationsCard + trainingDashboard + (trainingOptions ? '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Development Options</div><h2>Available Training</h2></div></div></div>' + trainingOptions : '') + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Your Staff</div><h2>Current employees</h2></div></div></div>' + staffCards + '</section>';
+  const modalStaff = staff.find(e => e.id === state.trainingStaffId);
+  const modalPrograms = modalStaff ? (state.staffTrainingPrograms || []).filter(p => Number(modalStaff.employee_level || 1) >= Number(p.required_level || 1)) : [];
+  const modalProgram = modalPrograms.find(p => p.id === state.trainingProgramId);
+  const trainingModal = modalStaff ? `
+    <div class="training-modal-backdrop" data-training-cancel>
+      <div class="training-modal" role="dialog" aria-modal="true" aria-labelledby="training-modal-title">
+        <div class="eyebrow">EMPLOYEE DEVELOPMENT</div>
+        <h2 id="training-modal-title">${esc(modalStaff.employee_name)} — Training</h2>
+        <p class="copy">Choose a training program for this pilot. Select a program to review the full training description before sending the pilot to the Training Academy.</p>
+        ${modalProgram ? `
+          <div class="training-detail-card">
+            <div class="eyebrow">TRAINING PROGRAM</div>
+            <h3>${esc(modalProgram.name)}</h3>
+            <p class="copy">${esc(modalProgram.description || "No description available.")}</p>
+            <div class="details training-modal-details">
+              <div class="detail"><div class="label">Cost</div><strong>${num(modalProgram.cost_credits || 0)} Cr</strong></div>
+              <div class="detail"><div class="label">Duration</div><strong>${num(modalProgram.duration_days || 0)} days</strong></div>
+              <div class="detail"><div class="label">XP Reward</div><strong>+${num(modalProgram.xp_reward || 0)} XP</strong></div>
+              <div class="detail"><div class="label">Required Level</div><strong>Level ${num(modalProgram.required_level || 1)}</strong></div>
+            </div>
+            <div class="callout"><b>Qualification:</b> ${esc(modalProgram.qualification_id || "—")}<br><span class="small">Training is completed in the Academy and advances the employee's career progression.</span></div>
+            <div class="training-modal-actions">
+              <button class="action" data-training-back>Back to Training List</button>
+              <button class="action primary" data-training-send>Send to Training Academy</button>
+              <button class="action" data-training-cancel>Cancel</button>
+            </div>
+          </div>` : `
+          <div class="training-program-list">
+            ${modalPrograms.length ? modalPrograms.map(p => `
+              <button type="button" class="training-program-option" data-training-program="${esc(modalStaff.id)}|${esc(p.id)}">
+                <span><b>${esc(p.name)}</b><small>Level ${num(p.required_level || 1)} • ${num(p.duration_days || 0)} days • +${num(p.xp_reward || 0)} XP</small></span>
+                <strong>${num(p.cost_credits || 0)} Cr</strong>
+              </button>`).join("") : '<div class="callout">No training programs are currently available for this employee.</div>'}
+          </div>`}
+      </div>
+    </div>` : "";
+  return '<section class="hero"><div><div class="eyebrow">FlightOps Crew & Staff</div><h1>Build your operation.</h1><p>Hire pilots based on experience, qualifications, reliability, and cost — then put them to work on company contracts.</p></div><div class="hero-stat"><b>' + num(s.company_xp || 0) + '</b><span>Company XP</span></div></section><section class="grid"><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Hiring Status</div><h2>Employee pilots</h2></div><div class="ops-route-chip">' + num(s.active_staff || 0) + ' / ' + num(s.max_staff || 0) + '</div></div><p class="copy">Your first employee pilot costs one month of salary up front. Company assignments generate company revenue, company XP, and employee experience.</p><div class="callout"><b>Company revenue:</b> ' + num(s.company_revenue || 0) + ' Cr<br><span class="small"><b>Owner activity:</b> ' + num(staffOps.owner_flights || 0) + ' personal flights • ' + num(staffOps.employee_flights || 0) + ' employee flights resolved • <b>' + num(staffOps.available_operation_slots || 0) + '</b> employee operation slot(s) available.</span></div></div><div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Dispatch Board</div><h2>Put your staff to work</h2></div></div></div>' + (activeDispatchBlocks || '<div class="card s12 ops-card"><p class="copy">No employee is currently in flight.</p></div>') + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Available Staff</div><h2>Ready for dispatch</h2></div></div></div>' + (availableStaffBlocks || '<div class="card s12 ops-card"><p class="copy">No employees are currently available for another company contract.</p></div>') + completedOperationsCard + trainingDashboard + (trainingOptions ? '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Development Options</div><h2>Available Training</h2></div></div></div>' + trainingOptions : '') + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Your Staff</div><h2>Current employees</h2></div></div></div>' + staffCards + '</section>' + trainingModal;
 }
 
 function training() {
@@ -1378,6 +1416,61 @@ function bind() {
     b.onclick = () => {
       state.page = "training";
       render();
+    };
+  });
+
+  $("#app").querySelectorAll("[data-training-staff]").forEach((b) => {
+    b.onclick = () => {
+      state.trainingStaffId = b.dataset.trainingStaff;
+      state.trainingProgramId = null;
+      state.page = "crew";
+      render();
+    };
+  });
+  $("#app").querySelectorAll("[data-training-program]").forEach((b) => {
+    b.onclick = () => {
+      const parts = String(b.dataset.trainingProgram || "").split("|");
+      if (parts.length !== 2) return;
+      state.trainingStaffId = parts[0];
+      state.trainingProgramId = parts[1];
+      render();
+    };
+  });
+  $("#app").querySelectorAll("[data-training-back]").forEach((b) => {
+    b.onclick = () => { state.trainingProgramId = null; render(); };
+  });
+  $("#app").querySelectorAll("[data-training-cancel]").forEach((b) => {
+    b.onclick = (e) => {
+      if (e.target !== b) return;
+      state.trainingStaffId = null;
+      state.trainingProgramId = null;
+      render();
+    };
+  });
+  $("#app").querySelectorAll("[data-training-send]").forEach((b) => {
+    b.onclick = async () => {
+      if (state.submitting || !state.trainingStaffId || !state.trainingProgramId) return;
+      const staffMember = (state.staff || []).find(x => x.id === state.trainingStaffId);
+      const program = (state.staffTrainingPrograms || []).find(x => x.id === state.trainingProgramId);
+      if (!staffMember || !program) return toast("Training selection is no longer available.", true);
+      state.submitting = true;
+      render();
+      try {
+        const result = await sb.rpc("start_staff_training", { p_staff_id: state.trainingStaffId, p_program_id: state.trainingProgramId });
+        if (result.error) throw result.error;
+        const name = staffMember.employee_name || "Employee pilot";
+        const programName = program.name || "training";
+        state.trainingStaffId = null;
+        state.trainingProgramId = null;
+        await load();
+        state.page = "training";
+        render();
+        toast(name + " has been sent to the Training Academy for " + programName + ".");
+      } catch (e) {
+        state.submitting = false;
+        render();
+        err(e, "Employee training could not be started.");
+      }
     };
   });
 
