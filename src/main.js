@@ -47,6 +47,7 @@ const state = {
   staffStatus: null,
   staffCandidates: [],
   staff: [],
+  staffQualifications: [],
   staffAssignments: [],
   staffOpsStatus: null,
   staffTraining: [],
@@ -613,6 +614,14 @@ async function load() {
   state.achievements = achievementsData || [];
   state.announcements = announcementsData || [];
   state.staff = staffData || [];
+  const staffIds = state.staff.map((x) => x.id).filter(Boolean);
+  const staffQualificationsResult = staffIds.length
+    ? await sb.from("pilot_staff_qualifications").select("staff_id,qualification_id,earned_at").in("staff_id", staffIds).order("earned_at", { ascending: true })
+    : { data: [], error: null };
+  if (staffQualificationsResult.error) {
+    state.loadErrors.push(`staff qualifications: ${staffQualificationsResult.error.message || "request failed"}`);
+  }
+  state.staffQualifications = staffQualificationsResult.data || [];
   const trainingStaffIds = state.staff.map((x) => x.id).filter(Boolean);
   const trainingResult = trainingStaffIds.length
     ? await sb.from("staff_training").select("*,staff_training_programs(*)").eq("owner_pilot_id", uid).in("staff_id", trainingStaffIds).order("started_at", { ascending: false })
@@ -684,6 +693,17 @@ async function load() {
       true,
     );
   }
+}
+function staffQualificationCodes(staffId) {
+  const rows = (state.staffQualifications || []).filter((x) => x.staff_id === staffId);
+  const codes = rows.map((x) => x.qualification_id).filter(Boolean);
+  const staffMember = (state.staff || []).find((x) => x.id === staffId);
+  if (staffMember?.qualification_id) codes.push(staffMember.qualification_id);
+  return [...new Set(codes)];
+}
+function staffQualificationText(staffId) {
+  const codes = staffQualificationCodes(staffId);
+  return codes.length ? codes.join(" • ") : "No qualification recorded";
 }
 function qIds() {
   return new Set(
@@ -1250,7 +1270,7 @@ function crew() {
       const activeAssignment = assignments.find((a) => a.staff_id === e.id && a.status === "dispatched");
       if (!activeAssignment) return "";
       return '<div class="card s6 ops-card"><div class="eyebrow">ACTIVE EMPLOYEE FLIGHT</div><h2>' + esc(e.employee_name) +
-        '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • Level ' + num(e.employee_level || 1) + ' • ' + esc(e.qualification_id) + ' • ' +
+        '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • Level ' + num(e.employee_level || 1) + ' • ' + esc(staffQualificationText(e.id)) + ' • ' +
         num(e.monthly_salary) + ' Cr/month • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || '—') + '</p>' +
         '<div class="callout"><b>✈️ IN FLIGHT / DISPATCHED</b><br>' +
         esc(activeAssignment.mission?.title || activeAssignment.mission_id) + ' • ' + esc((activeAssignment.mission?.origin_icao || e.home_base_icao || "—") + " → " + (activeAssignment.mission?.destination_icao || "—")) +
@@ -1265,7 +1285,7 @@ function crew() {
       const activeAssignment = assignments.find((a) => a.staff_id === e.id && a.status === "dispatched");
       const activeTrainingRecord = activeTraining.find((t) => t.staff_id === e.id);
       if (activeAssignment) return "";
-      if (activeTrainingRecord) return '<div class="card s6 ops-card"><div class="eyebrow">UNAVAILABLE</div><h2>' + esc(e.employee_name) + '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • Level ' + num(e.employee_level || 1) + ' • ' + esc(e.qualification_id) + ' • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || "—") + '</p><div class="notice"><b>🎓 IN TRAINING ACADEMY</b><br>' + esc(activeTrainingRecord.program?.name || activeTrainingRecord.program_id || "Training") + '<br><span class="small">Unavailable for company flight assignments until training is completed.</span></div></div>';
+      if (activeTrainingRecord) return '<div class="card s6 ops-card"><div class="eyebrow">UNAVAILABLE</div><h2>' + esc(e.employee_name) + '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • Level ' + num(e.employee_level || 1) + ' • ' + esc(staffQualificationText(e.id)) + ' • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || "—") + '</p><div class="notice"><b>🎓 IN TRAINING ACADEMY</b><br>' + esc(activeTrainingRecord.program?.name || activeTrainingRecord.program_id || "Training") + '<br><span class="small">Unavailable for company flight assignments until training is completed.</span></div></div>';
       const eligible = missions.filter((m) => m.active !== false && aircraftForMission(m, e).length).slice(0, 6);
       const options = eligible.map((m) => {
         const ac = aircraftForMission(m, e)[0];
