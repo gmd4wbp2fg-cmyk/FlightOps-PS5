@@ -1178,7 +1178,7 @@ function crew() {
     if (active) return "";
     const eligible = (state.staffTrainingPrograms || []).filter(p => Number(e.employee_level || 1) >= Number(p.required_level || 1));
     if (!eligible.length) return "";
-    return `<div class="card s4 ops-card"><div class="eyebrow">TRAINING AVAILABLE</div><h2>${esc(e.employee_name)}</h2><p class="copy">Level ${num(e.employee_level || 1)} • ${esc(e.qualification_id || "—")}</p><div class="details">${eligible.map(p => `<div class="detail"><div class="label">${esc(p.name)}</div><strong>${num(p.cost_credits || 0)} Cr</strong><div class="small">${num(p.duration_days || 0)} days • +${num(p.xp_reward || 0)} XP</div><button class="action" data-start-training="${esc(e.id)}|${esc(p.id)}">Start Training</button></div>`).join("")}</div></div>`;
+    return `<div class="card s4 ops-card"><div class="eyebrow">TRAINING AVAILABLE</div><h2>${esc(e.employee_name)}</h2><p class="copy">Level ${num(e.employee_level || 1)} • ${esc(e.qualification_id || "—")}</p><div class="details training-options">${eligible.map(p => `<div class="detail"><div class="label">${esc(p.name)}</div><strong>${num(p.cost_credits || 0)} Cr</strong><div class="small">${num(p.duration_days || 0)} days • +${num(p.xp_reward || 0)} XP</div><button class="action" data-start-training="${esc(e.id)}|${esc(p.id)}">Start Training</button></div>`).join("")}</div></div>`;
   }).join("");
 
   const staffOps = state.staffOpsStatus || {};
