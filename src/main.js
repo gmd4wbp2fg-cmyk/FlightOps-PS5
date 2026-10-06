@@ -776,15 +776,6 @@ function ownedMissionAircraft(m) {
 function owns(m) {
   return ownedMissionAircraft(m).length > 0;
 }
-function missionOriginAvailable(m) {
-  const origin = String(m?.origin_icao || m?.departure_icao || "").trim().toUpperCase();
-  if (!origin) return false;
-  return ownedMissionAircraft(m).some((candidate) => {
-    const owned = state.aircraft.find((x) => (x.aircraft_id || x.aircraft_master?.id) === candidate.id);
-    const base = String(owned?.base_icao || state.profile?.home_base_icao || "").trim().toUpperCase();
-    return base === origin;
-  });
-}
 function eligible(m) {
   const req =
     m.required_qualification_id ||
@@ -820,7 +811,7 @@ function missions() {
     (mission) =>
       !assigned.has(missionId(mission)) &&
       eligible(mission) &&
-      missionOriginAvailable(mission) &&
+  
       (mission.is_repeatable === true || !completed.has(missionId(mission))),
   );
 }
@@ -1003,7 +994,7 @@ function missionList() {
     return String(m.mission_type || m.type || "").toUpperCase() === filter;
   }).sort((a, b) => missionRecommendationScore(b) - missionRecommendationScore(a));
   const recommendedId = ms[0]?.id || ms[0]?.mission_id || null;
-  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Mission Board • ${esc(String(state.profile?.home_base_icao || "HOME BASE").toUpperCase())}</div><h1>Choose your next assignment.</h1><p>Only missions departing from an airport where one of your eligible aircraft is currently based are shown.</p></div><div><div class="label">Available at Base</div><div class="money">${ms.length}</div></div></section>
+  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Mission Board</div><h1>Choose your next assignment.</h1><p>Browse available contracts. Your current flight is shown on the Active tab.</p></div><div><div class="label">Available Contracts</div><div class="money">${ms.length}</div></div></section>
   ${active ? `<div class="notice"><b>Active mission:</b> ${esc(missionTitle(active))} • ${esc(route(active))}. Complete it before accepting another contract. <button class="action primary" data-action="report">Complete Mission</button></div>` : ""}
   <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Mission Filters</div><h2>Dispatch Categories</h2></div><div class="ops-route-chip">FILTER: ${esc(filter)}</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="action ${filter === "ALL" ? "primary" : ""}" data-mission-filter="ALL">All</button><button class="action ${filter === "CARGO" ? "primary" : ""}" data-mission-filter="CARGO">Cargo</button><button class="action ${filter === "MEDICAL" ? "primary" : ""}" data-mission-filter="MEDICAL">Medical</button><button class="action ${filter === "MEDEVAC" ? "primary" : ""}" data-mission-filter="MEDEVAC">Medevac</button><button class="action ${filter === "CHARTER" ? "primary" : ""}" data-mission-filter="CHARTER">Charter</button><button class="action ${filter === "SCENIC" ? "primary" : ""}" data-mission-filter="SCENIC">Scenic</button><button class="action ${filter === "WATER" ? "primary" : ""}" data-mission-filter="WATER">Water</button><button class="action ${filter === "BUSH" ? "primary" : ""}" data-mission-filter="BUSH">Bush</button></div></div><div class="grid"><div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Available Contracts</div><h2>Mission Dispatch</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> LIVE OPS</div></div>${ms.length ? ms.map((m) => `<div class="mission"><div><span class="tag">${esc(m.mission_code || m.id)}</span>${(m.id === recommendedId || m.mission_id === recommendedId) ? `<span class="tag">⭐ RECOMMENDED</span><div class="small" style="margin-top:6px">${missionRecommendationReason(m)}</div><span class="tag">${esc(missionRecommendationLabel(m))}</span>` : ""}<span class="tag">${esc(m.mission_type || m.type || "MISSION")}</span><span class="tag">LIVE WEATHER</span>${m.water_operation ? '<span class="tag">🌊 WATER OPERATION</span>' : ""}${m.bush_operation ? '<span class="tag">🌲 BUSH OPERATION</span>' : ""}${m.region_id ? `<span class="tag">${esc(m.region_id)}</span>` : ""}<h3>${esc(missionTitle(m))}</h3><div class="route">${esc(route(m))}</div><div class="small">${esc(m.distance_nm || m.distance || "—")} NM • ${esc(m.difficulty || "STANDARD")} • ${esc(m.priority || "STANDARD")}</div><div class="small">${num(m.reward_credits || m.credits)} Cr • +${num(m.reward_xp || m.xp)} XP</div><div class="small"><b>Why fly:</b> ${num(m.reward_credits || m.credits)} Cr • +${num(m.reward_xp || m.xp)} XP • ${esc(m.distance_nm || m.distance || "—")} NM${m.water_operation ? " • Water operation" : ""}${isBushMission(m) ? " • Bush operation" : ""}</div><div class="small"><b>Dispatch:</b> ${esc(missionTypeContext(m))} ${m.water_operation ? " Water operation — destination water access required." : ""} ${isBushMission(m) ? " Remote/backcountry operation — terrain and runway conditions require extra planning." : ""}</div></div><button class="action primary" data-brief="${m.id}" ${state.active ? "disabled" : ""}>View Brief</button></div>`).join("") : '<p class="small">No missions currently meet your ownership, qualification, and level requirements.</p>'}</div><div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Career Geography</div><h2>Grow your range.</h2></div><div class="ops-icon">◎</div></div><p class="copy">Your mission geography expands outward from your home base as your career grows. Early pilots stay close to home; higher levels open nationwide, North American, Caribbean, Central American, South American, European, African, Middle Eastern, and Asia-Pacific contracts.</p><div class="callout"><b>Career rule:</b> Missions are filtered to your current career eligibility. Open the brief to see the aircraft required or the aircraft options available for that contract.</div></div></div>`;
 }
@@ -1850,12 +1841,6 @@ async function accept() {
     const aircraftId = state.selectedAircraftId || (choices.length === 1 ? choices[0].id : null);
     if (!aircraftId) {
       throw new Error("Select an aircraft before accepting this mission.");
-    }
-    const selectedAircraft = state.aircraft.find((x) => (x.aircraft_id || x.aircraft_master?.id) === aircraftId);
-    const selectedBase = String(selectedAircraft?.base_icao || state.profile?.home_base_icao || "").trim().toUpperCase();
-    const missionOrigin = String(state.selected?.origin_icao || state.selected?.departure_icao || "").trim().toUpperCase();
-    if (!selectedBase || selectedBase !== missionOrigin) {
-      throw new Error("This mission does not depart from the selected aircraft's current base.");
     }
     await rpc("accept_mission", [
       { p_mission_id: id, p_aircraft_id: aircraftId },
