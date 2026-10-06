@@ -95,7 +95,7 @@ function levelForXp(xp) {
 function level() {
   return state.profile?.level || levelForXp(state.profile?.xp || 0);
 }
-const EPauletStyle = "<style>\n.epaulet-wrap{display:flex;align-items:center;gap:12px;min-width:205px}\n.epaulet-board{position:relative;width:112px;height:39px;border-radius:4px 7px 7px 4px;background:linear-gradient(145deg,#25313c,#101820);border:1px solid #71808c;box-shadow:0 4px 9px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.16);overflow:hidden;display:flex;align-items:center}\n.epaulet-tip{width:15px;height:100%;background:linear-gradient(90deg,#0b1116,#26333e);clip-path:polygon(0 0,100% 50%,0 100%);flex:none}\n.epaulet-band{height:100%;width:50px;display:flex;align-items:center;justify-content:center;gap:3px;transform:skewX(-8deg)}\n.epaulet-stripe{display:block;width:5px;height:30px;background:linear-gradient(90deg,#c9a33a,#fff3b0 48%,#c9a33a);border-radius:1px;box-shadow:0 0 2px rgba(255,255,255,.35)}\n.epaulet-insignia{flex:1;text-align:center;color:#f4ca55;font-size:14px;letter-spacing:2px;text-shadow:0 1px 2px #000}\n.epaulet-star{display:inline-block;font-size:14px;margin:0 1px}.epaulet-command{display:inline-block;font-size:15px;margin-left:2px}\n</style>";
+const EPauletStyle = "<style>\n.epaulet-wrap{display:flex;align-items:center;gap:12px;min-width:205px}\n.epaulet-board{position:relative;width:112px;height:39px;border-radius:4px 7px 7px 4px;background:linear-gradient(145deg,#25313c,#101820);border:1px solid #71808c;box-shadow:0 4px 9px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.16);overflow:hidden;display:flex;align-items:center}\n.epaulet-tip{width:15px;height:100%;background:linear-gradient(90deg,#0b1116,#26333e);clip-path:polygon(0 0,100% 50%,0 100%);flex:none}\n.epaulet-band{height:100%;width:50px;display:flex;align-items:center;justify-content:center;gap:3px;transform:skewX(-8deg)}\n.epaulet-stripe{display:block;width:5px;height:30px;background:linear-gradient(90deg,#c9a33a,#fff3b0 48%,#c9a33a);border-radius:1px;box-shadow:0 0 2px rgba(255,255,255,.35)}\n.epaulet-insignia{flex:1;text-align:center;color:#f4ca55;font-size:14px;letter-spacing:2px;text-shadow:0 1px 2px #000}\n.epaulet-star{display:inline-block;font-size:14px;margin:0 1px}.epaulet-command{display:inline-block;font-size:15px;margin-left:2px}\n.training-options{grid-template-columns:repeat(3,minmax(0,1fr))}.training-options .detail{display:flex;flex-direction:column}.training-options .detail .action{margin-top:auto}</style>";
 function ensureEpauletStyle() {
   if (!document.getElementById("flightops-epaulet-style")) {
     const s = document.createElement("style");
@@ -575,7 +575,7 @@ async function load() {
   if (trainingProgramsResult.error) {
     state.loadErrors.push(`training programs: ${trainingProgramsResult.error.message || "request failed"}`);
   }
-  state.staffTrainingPrograms = trainingProgramsResult.data || [];
+  state.staffTrainingPrograms = (trainingProgramsResult.data || []).map((p) => ({ ...p, cost_credits: Number(p.cost ?? p.cost_credits ?? 0) }));
   const staffBoardResult = await sb.rpc("staff_assignment_board");
   if (staffBoardResult.error) {
     state.loadErrors.push(`staff assignment board: ${staffBoardResult.error.message || "request failed"}`);
@@ -1178,7 +1178,7 @@ function crew() {
     if (active) return "";
     const eligible = (state.staffTrainingPrograms || []).filter(p => Number(e.employee_level || 1) >= Number(p.required_level || 1));
     if (!eligible.length) return "";
-    return `<div class="card s4 ops-card"><div class="eyebrow">TRAINING AVAILABLE</div><h2>${esc(e.employee_name)}</h2><p class="copy">Level ${num(e.employee_level || 1)} • ${esc(e.qualification_id || "—")}</p><div class="details training-options">${eligible.map(p => `<div class="detail"><div class="label">${esc(p.name)}</div><strong>${num(p.cost_credits || 0)} Cr</strong><div class="small">${num(p.duration_days || 0)} days • +${num(p.xp_reward || 0)} XP</div><button class="action" data-start-training="${esc(e.id)}|${esc(p.id)}">Start Training</button></div>`).join("")}</div></div>`;
+    return `<div class="card s12 ops-card"><div class="eyebrow">TRAINING AVAILABLE</div><h2>${esc(e.employee_name)}</h2><p class="copy">Level ${num(e.employee_level || 1)} • ${esc(e.qualification_id || "—")}</p><div class="details training-options">${eligible.map(p => `<div class="detail"><div class="label">${esc(p.name)}</div><strong>${num(p.cost_credits || 0)} Cr</strong><div class="small">${num(p.duration_days || 0)} days • +${num(p.xp_reward || 0)} XP</div><button class="action" data-start-training="${esc(e.id)}|${esc(p.id)}">Start Training</button></div>`).join("")}</div></div>`;
   }).join("");
 
   const staffOps = state.staffOpsStatus || {};
