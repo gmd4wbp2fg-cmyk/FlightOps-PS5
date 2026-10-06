@@ -453,10 +453,24 @@ async function load() {
   if (assignedMissionResult.error) {
     state.loadErrors.push(`staff mission records: ${assignedMissionResult.error.message || "request failed"}`);
   }
-  const missionRows = [
-    ...missionsData,
-    ...(assignedMissionResult.data || []).filter((m) => !missionsData.some((x) => x.id === m.id)),
+  // Load the permanent/core contract catalog separately as a safety net.
+  // This prevents a partial Mission Board response from hiding valid career contracts.
+  const coreMissionResult = await sb
+    .from("missions")
+    .select("*")
+    .eq("active", true)
+    .eq("generated", false);
+  if (coreMissionResult.error) {
+    state.loadErrors.push(`core mission catalog: ${coreMissionResult.error.message || "request failed"}`);
+  }
+  const missionSource = [
+    ...(missionsData || []),
+    ...(coreMissionResult.data || []),
+    ...(assignedMissionResult.data || []),
   ];
+  const missionRows = missionSource.filter(
+    (m, index, rows) => rows.findIndex((x) => x.id === m.id) === index,
+  );
 
   const qualificationIds = [
     ...new Set([
