@@ -1112,28 +1112,39 @@ function crew() {
   const assignments = state.staffAssignments || [];
   const staffOps = state.staffOpsStatus || {};
   const ownerCanOperate = staffOps.can_dispatch_employee !== false;
-  const dispatchBlocks = staff.map((e) => {
-    const activeAssignment = assignments.find((a) => a.staff_id === e.id && a.status === "dispatched");
-    const eligible = missions.filter((m) => m.active !== false && aircraftForMission(m, e).length).slice(0, 6);
-    const options = eligible.map((m) => {
-      const ac = aircraftForMission(m, e)[0];
-      return '<option value="' + esc(m.id + "|" + ac.aircraft_id) + '">' + esc((m.title || "Contract") + " • " + (m.origin_icao || "—") + " → " + (m.destination_icao || "—") + " • " + num(m.reward_credits || 0) + " Cr") + '</option>';
-    }).join("");
-    return '<div class="card s6 ops-card"><div class="eyebrow">COMPANY DISPATCH</div><h2>' + esc(e.employee_name) +
-      '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • Level ' + num(e.employee_level || 1) + ' • ' + esc(e.qualification_id) + ' • ' +
-      num(e.monthly_salary) + ' Cr/month • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || '—') + '</p>' +
-      (activeAssignment ? '<div class="callout"><b>✈️ IN FLIGHT / DISPATCHED</b><br>' +
+  const activeDispatchBlocks = staff
+    .map((e) => {
+      const activeAssignment = assignments.find((a) => a.staff_id === e.id && a.status === "dispatched");
+      if (!activeAssignment) return "";
+      return '<div class="card s6 ops-card"><div class="eyebrow">ACTIVE EMPLOYEE FLIGHT</div><h2>' + esc(e.employee_name) +
+        '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • Level ' + num(e.employee_level || 1) + ' • ' + esc(e.qualification_id) + ' • ' +
+        num(e.monthly_salary) + ' Cr/month • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || '—') + '</p>' +
+        '<div class="callout"><b>✈️ IN FLIGHT / DISPATCHED</b><br>' +
         esc(activeAssignment.mission?.title || activeAssignment.mission_id) + ' • ' + esc((activeAssignment.mission?.origin_icao || e.home_base_icao || "—") + " → " + (activeAssignment.mission?.destination_icao || "—")) +
         '<br>Aircraft: ' + esc(activeAssignment.aircraft_master?.model || activeAssignment.aircraft_id) +
         '<br><span class="small">Projected contract revenue: ' + num(activeAssignment.mission?.reward_credits || activeAssignment.mission?.base_reward || 0) + ' Cr</span>' +
-        '<br><div class="notice"><b>⏳ EMPLOYEE FLIGHT PENDING</b><br>This employee flight will complete automatically after you complete your next personal flight. You do not need to resolve it manually.</div>' +
-        '</div>' :
-      (eligible.length && ownerCanOperate ? '<label class="label">Available company contract<select data-staff-contract="' + esc(e.id) + '">' + options +
-      '</select></label><button class="action primary" data-dispatch-staff="' + esc(e.id) + '">Dispatch Pilot</button>' :
-      (eligible.length && !ownerCanOperate ? '<div class="notice"><b>Owner flight required.</b> Complete a personal flight before dispatching another employee contract.</div>' :
-      '<div class="callout">No eligible owned-aircraft contracts are currently available for this employee.</div>'))) +
-      '</div>';
-  }).join("");
+        '<br><div class="notice"><b>⏳ EMPLOYEE FLIGHT PENDING</b><br>This employee flight will complete automatically after you complete your next personal flight.</div>' +
+        '</div></div>';
+    })
+    .join("");
+  const availableStaffBlocks = staff
+    .map((e) => {
+      const activeAssignment = assignments.find((a) => a.staff_id === e.id && a.status === "dispatched");
+      if (activeAssignment) return "";
+      const eligible = missions.filter((m) => m.active !== false && aircraftForMission(m, e).length).slice(0, 6);
+      const options = eligible.map((m) => {
+        const ac = aircraftForMission(m, e)[0];
+        return '<option value="' + esc(m.id + "|" + ac.aircraft_id) + '">' + esc((m.title || "Contract") + " • " + (m.origin_icao || "—") + " → " + (m.destination_icao || "—") + " • " + num(m.reward_credits || 0) + " Cr") + '</option>';
+      }).join("");
+      return '<div class="card s6 ops-card"><div class="eyebrow">READY FOR DISPATCH</div><h2>' + esc(e.employee_name) +
+        '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • Level ' + num(e.employee_level || 1) + ' • ' + esc(e.qualification_id) + ' • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || '—') + '</p>' +
+        (eligible.length && ownerCanOperate ? '<label class="label">Available company contract<select data-staff-contract="' + esc(e.id) + '">' + options +
+        '</select></label><button class="action primary" data-dispatch-staff="' + esc(e.id) + '">Dispatch Pilot</button>' :
+        (eligible.length && !ownerCanOperate ? '<div class="notice"><b>Owner flight required.</b> Complete a personal flight before dispatching another employee contract.</div>' :
+        '<div class="callout">No eligible owned-aircraft contracts are currently available for this employee.</div>')) +
+        '</div>';
+    })
+    .join("");
   const staffCards = staff.length
     ? staff.map((e) => '<div class="card s4 ops-card"><div class="eyebrow">EMPLOYEE PILOT</div><h2>' + esc(e.employee_name) + '</h2><p class="copy">' + num(e.experience_hours) + ' hrs • Level ' + num(e.employee_level || 1) + ' • ' + esc(e.qualification_id) + ' • Base ' + esc(e.home_base_icao || state.profile?.home_base_icao || "—") + '</p><div class="details"><div class="detail"><div class="label">Specialties</div><strong>' + esc(Array.isArray(e.specialties) ? e.specialties.join(" • ") : "") + '</strong></div><div class="detail"><div class="label">Salary</div><strong>' + num(e.monthly_salary) + ' Cr / month</strong></div><div class="detail"><div class="label">Reliability</div><strong>' + num(e.reliability) + '%</strong></div><div class="detail"><div class="label">Company flights</div><strong>' + num(e.company_flights) + '</strong></div></div><div class="small">Employee XP: ' + num(e.employee_xp) + ' • Credits generated: ' + num(e.credits_generated) + ' Cr • Hangar ' + num((e.hangar_level || e.employee_level || 1) * 2) + ' aircraft</div>' + (Number(e.employee_level || 1) >= 10 && Number(e.company_flights || 0) >= 25 && Number(e.employee_xp || 0) >= 35000 ? '<div class="callout"><b>Independent operator path unlocked.</b> This pilot can eventually leave and establish their own company.</div>' : '') + '</div>').join("")
     : '<div class="card s12 ops-card"><h2>No employees yet</h2><p class="copy">Hire a pilot when you are ready. Employees can be dispatched on eligible company contracts once hired.</p></div>';
@@ -1147,7 +1158,7 @@ function crew() {
     ? '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Company Activity</div><h2>Completed employee operations</h2></div><div class="ops-route-chip">AUTO-RESOLVED</div></div><div class="card ops-card">' + completedOperations + '</div></div>'
     : "";
   const candidateCards = candidates.map((c) => '<div class="card s4 ops-card"><div class="eyebrow">AVAILABLE PILOT</div><h2>' + esc(c.candidate_name) + '</h2><p class="copy">' + num(c.experience_hours) + ' hrs • ' + esc(c.qualification_id) + '</p><div class="details"><div class="detail"><div class="label">Specialties</div><strong>' + esc(Array.isArray(c.specialties) ? c.specialties.join(" • ") : "") + '</strong></div><div class="detail"><div class="label">Reliability</div><strong>' + num(c.reliability) + '%</strong></div><div class="detail"><div class="label">Safety record</div><strong>' + num(c.safety_score) + '%</strong></div><div class="detail"><div class="label">Salary</div><strong>' + num(c.monthly_salary) + ' Cr / month</strong></div></div><button class="primary" data-hire-staff="' + esc(c.id) + '">Hire Pilot</button></div>').join("");
-  return '<section class="hero"><div><div class="eyebrow">FlightOps Crew & Staff</div><h1>Build your operation.</h1><p>Hire pilots based on experience, qualifications, reliability, and cost — then put them to work on company contracts.</p></div><div class="hero-stat"><b>' + num(s.company_xp || 0) + '</b><span>Company XP</span></div></section><section class="grid"><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Hiring Status</div><h2>Employee pilots</h2></div><div class="ops-route-chip">' + num(s.active_staff || 0) + ' / ' + num(s.max_staff || 0) + '</div></div><p class="copy">Your first employee pilot costs one month of salary up front. Company assignments generate company revenue, company XP, and employee experience.</p><div class="callout"><b>Company revenue:</b> ' + num(s.company_revenue || 0) + ' Cr<br><span class="small"><b>Owner activity:</b> ' + num(staffOps.owner_flights || 0) + ' personal flights • ' + num(staffOps.employee_flights || 0) + ' employee flights resolved • <b>' + num(staffOps.available_operation_slots || 0) + '</b> employee operation slot(s) available.</span></div></div><div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Dispatch Board</div><h2>Put your staff to work</h2></div></div></div>' + (dispatchBlocks || '<div class="card s12 ops-card"><p class="copy">Hire an employee to unlock company dispatch.</p></div>') + completedOperationsCard + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Your Staff</div><h2>Current employees</h2></div></div></div>' + staffCards + '</section>';
+  return '<section class="hero"><div><div class="eyebrow">FlightOps Crew & Staff</div><h1>Build your operation.</h1><p>Hire pilots based on experience, qualifications, reliability, and cost — then put them to work on company contracts.</p></div><div class="hero-stat"><b>' + num(s.company_xp || 0) + '</b><span>Company XP</span></div></section><section class="grid"><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Hiring Status</div><h2>Employee pilots</h2></div><div class="ops-route-chip">' + num(s.active_staff || 0) + ' / ' + num(s.max_staff || 0) + '</div></div><p class="copy">Your first employee pilot costs one month of salary up front. Company assignments generate company revenue, company XP, and employee experience.</p><div class="callout"><b>Company revenue:</b> ' + num(s.company_revenue || 0) + ' Cr<br><span class="small"><b>Owner activity:</b> ' + num(staffOps.owner_flights || 0) + ' personal flights • ' + num(staffOps.employee_flights || 0) + ' employee flights resolved • <b>' + num(staffOps.available_operation_slots || 0) + '</b> employee operation slot(s) available.</span></div></div><div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Dispatch Board</div><h2>Put your staff to work</h2></div></div></div>' + (activeDispatchBlocks || '<div class="card s12 ops-card"><p class="copy">No employee is currently in flight.</p></div>') + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Available Staff</div><h2>Ready for dispatch</h2></div></div></div>' + (availableStaffBlocks || '<div class="card s12 ops-card"><p class="copy">No employees are currently available for another company contract.</p></div>') + completedOperationsCard + '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Your Staff</div><h2>Current employees</h2></div></div></div>' + staffCards + '</section>';
 }
 
 
