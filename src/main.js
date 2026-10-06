@@ -909,19 +909,20 @@ function hangar() {
     const hasQualification = !a.required_qualification_id || qualSet.has(a.required_qualification_id);
     const hasLevel = level() >= Number(a.required_level || 1);
     const unlockable = !owned && hasQualification && hasLevel && !full;
-    const status = owned ? "OWNED" : unlockable ? "UNLOCKABLE" : "LOCKED";
+    const purchasable = !owned && !full;
+    const status = owned ? "OWNED" : unlockable ? "UNLOCKABLE" : purchasable ? "AVAILABLE" : "LOCKED";
     const qualification = a.required_qualification_id || "—";
     const price = Number(a.purchase_price || 0);
     return '<div class="plane ' + (status === "LOCKED" ? "locked" : "") + '">' +
-      '<div class="' + (status === "OWNED" ? "owned" : status === "UNLOCKABLE" ? "reward" : "small") + '">' +
-      (status === "OWNED" ? "● OWNED" : status === "UNLOCKABLE" ? "◆ UNLOCKABLE" : "🔒 LOCKED") + '</div>' +
+      '<div class="' + (status === "OWNED" ? "owned" : status === "UNLOCKABLE" || status === "AVAILABLE" ? "reward" : "small") + '">' +
+      (status === "OWNED" ? "● OWNED" : status === "UNLOCKABLE" ? "◆ UNLOCKABLE" : status === "AVAILABLE" ? "◆ AVAILABLE TO PURCHASE" : "🔒 LOCKED") + '</div>' +
       '<h3>' + esc(a.manufacturer) + ' ' + esc(a.model) + '</h3>' +
       '<div class="small">' + esc(a.category) + ' • ' + esc(a.engine_type || "—") + ' • ' + Number(a.engines || 1) + ' engine' + (Number(a.engines || 1) === 1 ? "" : "s") + ' • ' + Number(a.seats || 0) + ' seats</div>' +
       '<div class="details"><div class="detail"><div class="label">Required Level</div><strong>' + num(a.required_level || 1) + '</strong></div><div class="detail"><div class="label">Qualification</div><strong>' + esc(qualification) + '</strong></div></div>' +
       '<div class="price">' + (price ? num(price) + " Cr" : "Starter aircraft") + '</div>' +
       '<div class="small">' + (a.float_capable ? "🌊 Float capable" : "") + (a.float_capable && a.amphibious_capable ? " • Amphibious capable" : "") +
       (a.float_capable ? "<br>" : "") + (owned ? "Available for eligible missions." : full ? "Hangar full. Advance your career to expand capacity." : unlockable ? "You meet the current level and qualification requirements." : "Reach Level " + num(a.required_level || 1) + " and earn " + esc(qualification) + " to unlock.") + '</div>' +
-      (unlockable ? '<button class="action primary" data-action="purchase-aircraft" data-aircraft="' + esc(a.id) + '">Purchase Aircraft</button>' : '') +
+      (purchasable ? '<button class="action primary" data-action="purchase-aircraft" data-aircraft="' + esc(a.id) + '">Purchase Aircraft</button>' : '') +
       '</div>';
   }).join("");
   return '<section class="hero"><div><div class="eyebrow">Aircraft Hangar</div><h1>Build your hangar.</h1><p>Every pilot grows through the same progression. Hangar capacity expands as career level increases.</p></div><div><div class="label">Hangar</div><div class="money">' +
