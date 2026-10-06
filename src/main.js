@@ -1127,7 +1127,7 @@ function crew() {
         '<br>Aircraft: ' + esc(activeAssignment.aircraft_master?.model || activeAssignment.aircraft_id) +
         '<br><span class="small">Projected contract revenue: ' + num(activeAssignment.mission?.reward_credits || activeAssignment.mission?.base_reward || 0) + ' Cr</span>' +
         '<br><div class="notice"><b>⏳ EMPLOYEE FLIGHT PENDING</b><br>This employee flight will complete automatically after you complete your next personal flight. You do not need to resolve it manually.</div>' +
-        '</div>') :
+        '</div>' :
       (eligible.length && ownerCanOperate ? '<label class="label">Available company contract<select data-staff-contract="' + esc(e.id) + '">' + options +
       '</select></label><button class="action primary" data-dispatch-staff="' + esc(e.id) + '">Dispatch Pilot</button>' :
       (eligible.length && !ownerCanOperate ? '<div class="notice"><b>Owner flight required.</b> Complete a personal flight before dispatching another employee contract.</div>' :
@@ -1223,31 +1223,6 @@ function bind() {
           state.submitting = false;
           render();
           err(e, "Pilot hiring failed.");
-        }
-      };
-    });
-
-  $("#app")
-    .querySelectorAll("[data-resolve-staff]")
-    .forEach((b) => {
-      b.onclick = async () => {
-        if (state.submitting) return;
-        state.submitting = true;
-        render();
-        try {
-          const result = await sb.rpc("complete_staff_assignment", {
-            p_assignment_id: b.dataset.resolveStaff,
-            p_success: true,
-          });
-          if (result.error) throw result.error;
-          await load();
-          state.page = "crew";
-          render();
-          toast("Employee flight completed. Revenue and XP credited.");
-        } catch (e) {
-          state.submitting = false;
-          render();
-          err(e, "Employee flight resolution failed.");
         }
       };
     });
