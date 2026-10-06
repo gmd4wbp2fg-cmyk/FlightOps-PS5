@@ -343,7 +343,7 @@ function nav() {
           state.page = b.dataset.page;
           render();
           if (state.page === "active") {
-            await load();
+            await loadActiveMissionDirect();
             if (state.page === "active") render();
           }
         }),
