@@ -1031,6 +1031,12 @@ function brief() {
   const fuelText = "Pilot responsibility — calculate usable fuel, reserves, alternate requirements, and expected wind/weather effects for the actual flight.";
   const contingencyText = "If weather, runway, aircraft condition, fuel, or destination conditions become unacceptable, reassess the flight and divert or discontinue as appropriate.";
   return `<section class="brief-hero"><div class="brief-hero-main"><div class="eyebrow">FlightOps Dispatch Release • Pre-Flight</div><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="ops-route-chip"><span class="ops-dot"></span> DISPATCH ${esc(m.mission_code || m.id)}</span><span class="ops-route-chip">LIVE WEATHER</span></div><div class="brief-status-row"><span class="ops-route-chip"><span class="ops-dot"></span> CONTRACT OPEN</span><span class="ops-route-chip">${esc(m.mission_type || m.type || "MISSION")}</span>${m.water_operation ? '<span class="ops-route-chip">🌊 WATER OPERATION</span>' : ""}${isBushMission(m) ? '<span class="ops-route-chip">🌲 BUSH OPERATION</span>' : ""}</div><h1>${esc(missionTitle(m))}</h1><p>${esc(m.mission_type || m.type || "MISSION")} • ${esc(route(m))}</p></div><div class="brief-value"><div class="label">Contract Value</div><div class="money">${num(m.reward_credits || m.credits)} Cr</div><div class="small">+${num(m.reward_xp || m.xp)} XP</div></div></section>
+  <div class="brief-command-strip">
+    <div><span class="label">Dispatch Status</span><strong>OPEN FOR ACCEPTANCE</strong><span class="small">Pilot review required before release.</span></div>
+    <div><span class="label">Operation</span><strong>${esc(m.mission_type || m.type || "MISSION")}</strong><span class="small">${esc(m.priority || "STANDARD")} priority</span></div>
+    <div><span class="label">Difficulty</span><strong>${esc(m.difficulty || "STANDARD")}</strong><span class="small">${esc(q)}</span></div>
+    <div><span class="label">Weather</span><strong>LIVE WEATHER</strong><span class="small">MSFS Live Weather required</span></div>
+  </div>
   <div class="grid">
     <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">01 • Dispatch Information</div><h2>Operational Release</h2></div><div class="ops-icon">✈</div></div>
       <div class="callout"><div class="eyebrow">MISSION STORY</div><p style="margin:6px 0 0">${missionStory(m)}</p></div>
