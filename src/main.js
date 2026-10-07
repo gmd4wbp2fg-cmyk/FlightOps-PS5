@@ -1148,17 +1148,78 @@ function brief() {
   </div>`;
 }
 function hangar() {
-  const ownedIds = new Set(state.aircraft.map((a) => a.aircraft_id));
+  const owned = state.aircraft || [];
+  const ownedIds = new Set(owned.map((a) => a.aircraft_id));
   const qualSet = qIds();
   const capacity = Math.max(2, level() * 2);
-  const full = state.aircraft.length >= capacity;
-  const cards = state.aircraftCatalog.map((a) => {
-    const owned = ownedIds.has(a.id);
+  const full = owned.length >= capacity;
+  const activeAircraftId = state.active?.aircraft_id || null;
+  const history = state.history || [];
+
+  const aircraftName = (a) =>
+    a?.aircraft_master?.name ||
+    [a?.aircraft_master?.manufacturer, a?.aircraft_master?.model].filter(Boolean).join(" ") ||
+    a?.aircraft_id ||
+    "Aircraft";
+
+  const aircraftTail = (a) =>
+    a?.tail_number ||
+    a?.registration ||
+    a?.aircraft_master?.tail_number ||
+    a?.aircraft_master?.registration ||
+    "—";
+
+  const aircraftStats = (a) => {
+    const rows = history.filter((h) => String(h.aircraft_id || "") === String(a.aircraft_id || ""));
+    const minutes = rows.reduce((sum, h) => sum + Number(h.flight_minutes || h.actual_flight_minutes || h.duration_minutes || 0), 0);
+    const distance = rows.reduce((sum, h) => sum + Number(h.distance_nm || h.actual_distance_nm || 0), 0);
+    return { flights: rows.length, minutes, distance };
+  };
+
+  const fleetOperational = owned.filter((a) => String(a.status || "").toLowerCase() !== "inactive").length;
+  const fleetAssigned = owned.filter((a) => String(a.aircraft_id || "") === String(activeAircraftId || "")).length;
+
+  const ownedCards = owned.length
+    ? owned.map((a) => {
+        const master = a.aircraft_master || {};
+        const stats = aircraftStats(a);
+        const isActive = String(a.aircraft_id || "") === String(activeAircraftId || "");
+        const status = String(a.status || "active").toLowerCase();
+        const statusLabel = status === "inactive" ? "OUT OF SERVICE" : isActive ? "ASSIGNED TO ACTIVE FLIGHT" : "AVAILABLE";
+        const statusClass = status === "inactive" ? "fleet-status-muted" : isActive ? "fleet-status-active" : "fleet-status-ready";
+        const capabilities = [
+          master.category,
+          master.engine_type,
+          Number(master.engines || 0) > 1 ? (Number(master.engines) + " engines") : "Single engine",
+          Number(master.seats || 0) ? (Number(master.seats) + " seats") : "",
+          master.float_capable ? "Float capable" : "",
+          master.amphibious_capable ? "Amphibious" : "",
+        ].filter(Boolean).join(" • ");
+
+        return '<div class="fleet-command-card">' +
+          '<div class="fleet-command-head"><div><div class="eyebrow">FLEET AIRCRAFT</div><h3>' + esc(aircraftName(a)) + '</h3><div class="fleet-tail">' + esc(aircraftTail(a)) + '</div></div><span class="fleet-status ' + statusClass + '">' + statusLabel + '</span></div>' +
+          '<div class="fleet-command-grid">' +
+            '<div><div class="label">Base</div><strong>' + esc(a.base_icao || state.profile?.home_base_icao || "—") + '</strong></div>' +
+            '<div><div class="label">Aircraft Status</div><strong>' + esc(status === "inactive" ? "Inactive" : "Operational") + '</strong></div>' +
+            '<div><div class="label">Flight Operations</div><strong>' + num(stats.flights) + '</strong></div>' +
+            '<div><div class="label">Flight Time</div><strong>' + Math.floor(stats.minutes / 60) + 'h ' + (stats.minutes % 60) + 'm</strong></div>' +
+            '<div><div class="label">Distance</div><strong>' + num(stats.distance) + ' NM</strong></div>' +
+            '<div><div class="label">Capability</div><strong>' + esc(capabilities || "General aviation") + '</strong></div>' +
+          '</div>' +
+          (isActive ? '<div class="fleet-command-callout"><b>ACTIVE ASSIGNMENT</b><br>This aircraft is reserved for your current FlightOps operation. Complete the active dispatch before assigning it to another operation.</div>' :
+            status === "inactive" ? '<div class="fleet-command-callout muted"><b>OUT OF SERVICE</b><br>This aircraft is not available for mission assignment until its status is restored.</div>' :
+            '<div class="fleet-command-ready"><span class="ops-dot"></span><b>READY FOR ELIGIBLE OPERATIONS</b><span>Base ' + esc(a.base_icao || state.profile?.home_base_icao || "—") + '</span></div>') +
+        '</div>';
+      }).join("")
+    : '<div class="card s12 ops-card"><h2>No aircraft assigned to your operation.</h2><p class="copy">Your starter aircraft or first purchase will appear here once FlightOps has an owned aircraft record.</p></div>';
+
+  const catalogCards = state.aircraftCatalog.map((a) => {
+    const ownedAlready = ownedIds.has(a.id);
     const hasQualification = !a.required_qualification_id || qualSet.has(a.required_qualification_id);
     const hasLevel = level() >= Number(a.required_level || 1);
-    const unlockable = !owned && hasQualification && hasLevel && !full;
-    const purchasable = !owned && !full;
-    const status = owned ? "OWNED" : unlockable ? "UNLOCKABLE" : purchasable ? "AVAILABLE" : "LOCKED";
+    const unlockable = !ownedAlready && hasQualification && hasLevel && !full;
+    const purchasable = !ownedAlready && !full;
+    const status = ownedAlready ? "OWNED" : unlockable ? "UNLOCKABLE" : purchasable ? "AVAILABLE" : "LOCKED";
     const qualification = a.required_qualification_id || "—";
     const price = Number(a.purchase_price || 0);
     return '<div class="plane ' + (status === "LOCKED" ? "locked" : "") + '">' +
@@ -1169,16 +1230,23 @@ function hangar() {
       '<div class="details"><div class="detail"><div class="label">Required Level</div><strong>' + num(a.required_level || 1) + '</strong></div><div class="detail"><div class="label">Qualification</div><strong>' + esc(qualification) + '</strong></div></div>' +
       '<div class="price">' + (price ? num(price) + " Cr" : "Starter aircraft") + '</div>' +
       '<div class="small">' + (a.float_capable ? "🌊 Float capable" : "") + (a.float_capable && a.amphibious_capable ? " • Amphibious capable" : "") +
-      (a.float_capable ? "<br>" : "") + (owned ? "Available for eligible missions." : full ? "Hangar full. Advance your career to expand capacity." : unlockable ? "You meet the current level and qualification requirements." : "Reach Level " + num(a.required_level || 1) + " and earn " + esc(qualification) + " to unlock.") + '</div>' +
+      (a.float_capable ? "<br>" : "") + (ownedAlready ? "Assigned to your FlightOps fleet." : full ? "Hangar full. Advance your career to expand capacity." : unlockable ? "You meet the current level and qualification requirements." : "Reach Level " + num(a.required_level || 1) + " and earn " + esc(qualification) + " to unlock.") + '</div>' +
       (purchasable ? '<button class="action primary" data-action="purchase-aircraft" data-aircraft="' + esc(a.id) + '">Purchase Aircraft</button>' : '') +
       '</div>';
   }).join("");
-  return '<section class="hero"><div><div class="eyebrow">Aircraft Hangar</div><h1>Build your hangar.</h1><p>Every pilot grows through the same progression. Hangar capacity expands as career level increases.</p></div><div><div class="label">Hangar</div><div class="money">' +
-    state.aircraft.length + ' / ' + capacity + '</div></div></section><div class="grid"><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Hangar Progression</div><h2>Level ' +
-    num(level()) + ' Hangar</h2></div><div class="ops-route-chip">' + capacity + ' aircraft</div></div><p class="copy">Level 1 holds 2 aircraft. Each career level adds 2 more hangar spaces.</p><div class="callout"><b>Home base:</b> ' +
-    esc(state.profile?.home_base_icao || "—") + ' • <b>Current fleet:</b> ' + state.aircraft.length + ' / ' + capacity + '</div></div></div><div class="fleet">' +
-    (cards || '<div class="notice">No aircraft are currently in the FlightOps catalog.</div>') + '</div>';
+
+  return '<section class="hero fleet-command-hero"><div><div class="eyebrow">Aircraft Operations • Fleet Command</div><h1>Manage your fleet.</h1><p>Your aircraft are operational assets. FlightOps tracks where they are based, whether they are available, and how much flight activity each aircraft has accumulated.</p></div><div><div class="label">Fleet Capacity</div><div class="money">' + owned.length + ' / ' + capacity + '</div></div></section>' +
+    '<section class="grid">' +
+      '<div class="card s3 ops-card fleet-summary-card"><div class="label">Fleet Status</div><div class="fleet-summary-value">' + num(fleetOperational) + '</div><div class="small">Operational aircraft</div></div>' +
+      '<div class="card s3 ops-card fleet-summary-card"><div class="label">Available</div><div class="fleet-summary-value">' + num(Math.max(0, fleetOperational - fleetAssigned)) + '</div><div class="small">Ready for eligible missions</div></div>' +
+      '<div class="card s3 ops-card fleet-summary-card"><div class="label">Assigned</div><div class="fleet-summary-value">' + num(fleetAssigned) + '</div><div class="small">Current FlightOps operation</div></div>' +
+      '<div class="card s3 ops-card fleet-summary-card"><div class="label">Home Base</div><div class="fleet-summary-value fleet-summary-base">' + esc(state.profile?.home_base_icao || "—") + '</div><div class="small">Primary pilot base</div></div>' +
+      '<div class="s12"><div class="ops-section-head"><div><div class="eyebrow">Owned Fleet</div><h2>Fleet Operations Board</h2></div><div class="ops-route-chip">' + num(owned.length) + ' AIRCRAFT</div></div><div class="fleet-command-list">' + ownedCards + '</div></div>' +
+      '<div class="s12"><div class="card ops-card"><div class="ops-section-head"><div><div class="eyebrow">Fleet Readiness</div><h2>Operational rule</h2></div><div class="ops-route-chip">BASE • STATUS • MISSION</div></div><p class="copy">An aircraft is considered ready when it is active, based within its operating location, and not already committed to an active FlightOps assignment. Mission-specific aircraft, qualification, and water-operation requirements are checked at dispatch.</p><div class="callout"><b>FlightOps does not replace MSFS aircraft setup.</b> Fuel, weight & balance, performance calculations, avionics configuration, and final preflight remain the pilot's responsibility inside MSFS.</div></div></div>' +
+    '</section>' +
+    '<section class="fleet-catalog-section"><div class="ops-section-head"><div><div class="eyebrow">Aircraft Catalog</div><h2>Build your hangar</h2></div><div class="ops-route-chip">' + capacity + ' CAPACITY</div></div><p class="small">Purchase aircraft as your level, qualifications, and finances allow. Purchased aircraft immediately enter the Fleet Operations Board.</p><div class="fleet">' + (catalogCards || '<div class="notice">No aircraft are currently in the FlightOps catalog.</div>') + '</div></section>';
 }
+
 function career() {
   const p = state.profile || {};
   const xp = Number(p.xp || 0);
