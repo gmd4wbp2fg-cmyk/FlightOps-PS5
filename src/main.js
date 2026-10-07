@@ -898,7 +898,20 @@ function activeView() {
     <div class="grid"><div class="card s8"><div class="eyebrow">Active Mission</div><h2>Nothing dispatched</h2><p class="copy">You do not have a mission in progress right now.</p><button class="action primary" data-page="missions">Go to Mission Board</button></div><div class="card s4"><div class="eyebrow">Mission Flow</div><h2>Choose → Accept → Fly</h2><p class="copy">Pick a contract from the Mission Board. After you accept it, the full dispatch information will appear here.</p></div></div>`;
   }
   const a = m.aircraft_master || m;
+  const legs = missionLegs(m);
+  const totalDistance = Number(m.distance_nm || legs.reduce((sum, leg) => sum + Number(leg.distance_nm || 0), 0) || 0);
+  const cruise = Number(a.cruise_kts || 0);
+  const blockMinutes = cruise > 0 && totalDistance > 0 ? Math.round((totalDistance / cruise) * 60 * 1.12) : null;
+  const blockText = blockMinutes ? \`${Math.floor(blockMinutes / 60)}h ${blockMinutes % 60}m est. block\` : "Pilot to calculate";
+  const planning = m.planning_level || (m.required_aircraft_id === "c172" ? "Suggested planning" : "Pilot planning");
+  const legState = legDisplay(m, state.active?.current_leg);
+  const currentLeg = legState.leg;
   return `<section class="hero"><div><div class="eyebrow">Active Mission • Dispatch</div><h1>${esc(missionTitle(m))}</h1><p>${esc(m.mission_code || m.id)} • ${esc(route(m))}</p></div><div><div class="label">Contract Value</div><div class="money">${num(m.reward_credits || m.credits)} Cr</div></div></section>
+  <div class="active-command-strip">
+    <div class="active-command-main"><span class="ops-dot"></span><div><span class="label">Operational Status</span><strong>DISPATCHED • READY FOR FLIGHT</strong><span class="small">Assignment accepted. Complete your preflight in MSFS before departure.</span></div></div>
+    <div><span class="label">Current Leg</span><strong>${legState.current} / ${legState.count}</strong><span class="small">${esc(currentLeg.origin_icao)} → ${esc(currentLeg.destination_icao)}</span></div>
+    <div><span class="label">Weather</span><strong>LIVE WEATHER</strong><span class="small">Required for this operation</span></div>
+  </div>
   <div class="brief-route-banner"><div><div class="eyebrow">ROUTE</div><strong>${esc(legs[0]?.origin_icao || m.origin_icao || "—")} → ${esc(legs[legs.length-1]?.destination_icao || m.destination_icao || "—")}</strong></div><div class="brief-route-stats"><span>${num(totalDistance)} NM</span><span>${esc(blockText)}</span><span>${esc(planning)}</span></div></div><div class="grid">
     <div class="card s12 dispatch-accepted-card"><div class="dispatch-accepted-head"><div><div class="eyebrow">DISPATCH ACCEPTED • OPERATIONAL ASSIGNMENT</div><h2>Assignment Confirmed</h2><p class="copy">This mission is now assigned to you. The contract is locked, the selected aircraft is reserved for the operation, and the flight may proceed when you are ready.</p></div><div class="dispatch-accepted-badge"><span class="ops-dot"></span> ACTIVE</div></div><div class="dispatch-accepted-grid"><div><span class="label">Aircraft</span><strong>${esc(aircraftName(a))}</strong></div><div><span class="label">Route</span><strong>${esc(route(m))}</strong></div><div><span class="label">Contract</span><strong>${num(m.reward_credits || m.credits)} Cr</strong></div><div><span class="label">Next Step</span><strong>Preflight &amp; Dispatch</strong></div></div></div>
     <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Mission Card</div><h2>Ready for departure</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> DISPATCHED</div></div><div class="callout"><div class="eyebrow">${missionStoryLead(m)}</div><div class="small" style="margin-top:4px">MISSION STORY • ${missionStoryTitle(m)}</div><p style="margin:6px 0 0">${missionStory(m)}</p><p class="small" style="margin:10px 0 0">${missionStoryFooter(m)}</p></div><div class="details">
