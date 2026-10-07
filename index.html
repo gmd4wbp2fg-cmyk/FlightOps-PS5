@@ -216,4 +216,36 @@
 @media(max-width:430px){
   .dispatch-accepted-grid{grid-template-columns:1fr}
 }
+
+/* Active Dispatch Command Strip */
+.active-command-strip{
+  display:grid;grid-template-columns:1.6fr .8fr .8fr;gap:10px;
+  margin:0 0 14px;padding:11px;
+  background:linear-gradient(135deg,#0c1f31,#081522);
+  border:1px solid #31516d;border-radius:16px;
+  box-shadow:inset 0 1px #ffffff08,0 10px 30px #0004;
+}
+.active-command-strip>div{
+  min-width:0;background:#0d2034;border:1px solid #213f5b;
+  border-radius:11px;padding:11px 12px;
+}
+.active-command-strip .active-command-main{
+  display:flex;align-items:center;gap:10px;
+  background:#0d241f;border-color:#2d715d;
+}
+.active-command-main .ops-dot{flex:none;width:9px;height:9px}
+.active-command-main strong,.active-command-strip>div:not(.active-command-main) strong{
+  display:block;margin-top:4px;color:#eef7ff;font-size:13px;line-height:1.2;
+  overflow-wrap:anywhere;
+}
+.active-command-main strong{color:#6ff0bf}
+.active-command-strip .small{display:block;margin-top:4px;font-size:11px}
+@media(max-width:760px){
+  .active-command-strip{grid-template-columns:1fr 1fr}
+  .active-command-strip .active-command-main{grid-column:1 / -1}
+}
+@media(max-width:430px){
+  .active-command-strip{grid-template-columns:1fr}
+  .active-command-strip .active-command-main{grid-column:auto}
+}
 </style></head><body><div class="app"><header><div class="logo">FLIGHT<b>OPS</b> PS5</div><div class="mode">MSFS 2024 • FREE FLIGHT</div></header><nav id="nav"></nav><main id="app"></main></div><div id="toast" class="toast"></div><script type="module" src="/src/main.js"></script></body></html>
