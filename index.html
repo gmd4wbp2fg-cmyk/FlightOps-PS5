@@ -113,4 +113,36 @@
   .brief-route-banner{flex-direction:column;align-items:flex-start}
   .brief-route-stats{justify-content:flex-start}
 }
+
+/* Dispatch Brief Presentation Upgrade */
+.brief-hero{
+  position:relative;display:flex;justify-content:space-between;gap:24px;align-items:stretch;
+  margin:10px 0 20px;padding:24px;border:1px solid #315a7d;border-radius:22px;
+  background:radial-gradient(circle at 82% 28%,#1c4968 0,#112b45 32%,#0b1727 72%);
+  box-shadow:0 18px 55px #0006;overflow:hidden;
+}
+.brief-hero:after{content:"✈";position:absolute;right:34px;bottom:-24px;font-size:120px;color:#ffffff08;transform:rotate(-8deg)}
+.brief-hero-main{position:relative;z-index:1;min-width:0}
+.brief-hero-main h1{font-size:38px;margin:14px 0 7px;letter-spacing:-.5px}
+.brief-hero-main p{color:#b9cee3;margin:0;font-size:15px}
+.brief-status-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.brief-value{position:relative;z-index:1;min-width:170px;align-self:center;text-align:right;padding-left:18px;border-left:1px solid #ffffff18}
+.brief-value .money{font-size:32px;margin:4px 0}
+.brief-route-banner{
+  display:flex;justify-content:space-between;gap:18px;align-items:center;
+  margin:0 0 14px;padding:15px 18px;background:#091827;border:1px solid #284762;border-radius:15px;
+}
+.brief-route-banner strong{display:block;font-size:20px;letter-spacing:.4px}
+.brief-route-stats{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.brief-route-stats span{padding:7px 10px;border-radius:9px;background:#10263d;border:1px solid #294a67;color:#c8dced;font-size:12px;font-weight:800}
+.brief-hero + .grid .ops-card{box-shadow:0 12px 36px #0004}
+.brief-hero + .grid .callout{background:linear-gradient(135deg,#171e27,#101820);border-left-color:var(--blue)}
+@media(max-width:760px){
+  .brief-hero{padding:19px;display:block}
+  .brief-hero-main h1{font-size:29px}
+  .brief-value{text-align:left;border-left:0;border-top:1px solid #ffffff18;padding:14px 0 0;margin-top:18px}
+  .brief-value .money{font-size:28px}
+  .brief-route-banner{display:block}
+  .brief-route-stats{justify-content:flex-start;margin-top:10px}
+}
 </style></head><body><div class="app"><header><div class="logo">FLIGHT<b>OPS</b> PS5</div><div class="mode">MSFS 2024 • FREE FLIGHT</div></header><nav id="nav"></nav><main id="app"></main></div><div id="toast" class="toast"></div><script type="module" src="/src/main.js"></script></body></html>
