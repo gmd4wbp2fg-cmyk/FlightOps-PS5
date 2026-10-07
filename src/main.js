@@ -902,7 +902,7 @@ function activeView() {
   const totalDistance = Number(m.distance_nm || legs.reduce((sum, leg) => sum + Number(leg.distance_nm || 0), 0) || 0);
   const cruise = Number(a.cruise_kts || 0);
   const blockMinutes = cruise > 0 && totalDistance > 0 ? Math.round((totalDistance / cruise) * 60 * 1.12) : null;
-  const blockText = blockMinutes ? \`${Math.floor(blockMinutes / 60)}h ${blockMinutes % 60}m est. block\` : "Pilot to calculate";
+  const blockText = blockMinutes ? Math.floor(blockMinutes / 60) + "h " + (blockMinutes % 60) + "m est. block" : "Pilot to calculate";
   const planning = m.planning_level || (m.required_aircraft_id === "c172" ? "Suggested planning" : "Pilot planning");
   const legState = legDisplay(m, state.active?.current_leg);
   const currentLeg = legState.leg;
