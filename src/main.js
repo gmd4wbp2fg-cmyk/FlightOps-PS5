@@ -932,17 +932,18 @@ function activeView() {
   </div>`;
 }
 function home() {
-  return '<section class="hero welcome-hero"><div><div class="eyebrow">FlightOps Welcome</div><h1>Your Flight. Your Aircraft. Your Operation.</h1><p>FlightOps is a standalone flight-operations management system designed to work alongside Microsoft Flight Simulator.</p></div><div class="hero-stat"><b>FREE FLIGHT</b><span>Any MSFS version • Supported platforms</span></div></section>' +
-    '<div class="card s12 ops-card flightops-intro"><div class="ops-section-head"><div><div class="eyebrow">ABOUT FLIGHTOPS</div><h2>Built for Free Flight Operations.</h2></div><div class="ops-route-chip">NOT CAREER MODE</div></div>' +
-    '<p class="copy"><b>FlightOps</b> works alongside MSFS. It does not replace or depend on MSFS Career Mode. The simulator provides the aircraft, world and flying. <b>FlightOps provides the operation.</b></p>' +
-    '<div class="details"><div class="detail"><div class="label">01 • PLAN</div><strong>Choose the operation</strong><div class="small">Select a mission and decide what you want to fly.</div></div>' +
-    '<div class="detail"><div class="label">02 • ASSIGN</div><strong>Aircraft + Crew</strong><div class="small">Match the right aircraft and pilot.</div></div>' +
-    '<div class="detail"><div class="label">03 • DISPATCH</div><strong>Prepare the flight</strong><div class="small">Review route, requirements and conditions.</div></div>' +
-    '<div class="detail"><div class="label">04 • FLY</div><strong>Use MSFS Free Flight</strong><div class="small">Fly on your platform of choice.</div></div>' +
-    '<div class="detail"><div class="label">05 • DEBRIEF</div><strong>Record the result</strong><div class="small">Return to FlightOps and file the outcome.</div></div>' +
-    '<div class="detail"><div class="label">06 • CONTINUE</div><strong>Build the operation</strong><div class="small">Experience, aircraft utilization and missions continue to evolve.</div></div></div>' +
-    '<div class="callout"><b>FlightOps philosophy:</b> The simulator gives you the aircraft and the world. You provide the flying. FlightOps gives the flight a purpose.</div></div>';
-}
+  return '<section class="welcome-product-hero">' +
+    '<div class="welcome-hero-copy"><div class="eyebrow">FLIGHTOPS • FREE FLIGHT OPERATIONS</div>' +
+    '<h1>Your Flight.<br><span>Your Aircraft.</span><br>Your Operation.</h1>' +
+    '<p class="welcome-lead">A professional flight-operations management system built to give Microsoft Flight Simulator Free Flight a purpose.</p>' +
+    '<div class="welcome-hero-actions"><button class="action primary" data-page="operations">Enter Flight Operations <span>→</span></button><div class="welcome-platform"><b>MSFS FREE FLIGHT</b><span>Any supported MSFS version • Any supported platform</span></div></div></div>' +
+    '<div class="welcome-hero-visual"><div class="welcome-radar"></div><div class="welcome-route-line"></div><div class="welcome-aircraft">✈</div><div class="welcome-location welcome-location-a">ORIGIN</div><div class="welcome-location welcome-location-b">OPERATION</div><div class="welcome-visual-footer"><span>FLIGHTOPS</span><span>OPERATIONAL SYSTEM</span></div></div>' +
+    '</section>' +
+    '<section class="welcome-section"><div class="welcome-section-heading"><div class="eyebrow">HOW FLIGHTOPS WORKS</div><h2>From flight idea to completed operation.</h2><p>FlightOps sits alongside the simulator and manages the operational layer around your flying.</p></div>' +
+    '<div class="welcome-flow"><div><span>01</span><b>PLAN</b><p>Choose the mission, route and operational objective.</p></div><div><span>02</span><b>ASSIGN</b><p>Match the aircraft and crew to the operation.</p></div><div><span>03</span><b>DISPATCH</b><p>Review requirements and release the flight.</p></div><div><span>04</span><b>FLY</b><p>Use MSFS Free Flight to conduct the mission.</p></div><div><span>05</span><b>DEBRIEF</b><p>Record the result and update the operation.</p></div><div><span>06</span><b>CONTINUE</b><p>Build experience, utilization and future missions.</p></div></div></section>' +
+    '<section class="welcome-difference"><div><div class="eyebrow">THE FLIGHTOPS DIFFERENCE</div><h2>The simulator gives you the aircraft and the world. You provide the flying. <span>FlightOps gives the flight a purpose.</span></h2></div><div class="welcome-difference-grid"><div><b>STANDALONE</b><p>Works alongside MSFS without replacing the simulator.</p></div><div><b>FREE FLIGHT</b><p>Built specifically for structured Free Flight operations.</p></div><div><b>OPERATIONAL</b><p>Manage missions, aircraft, crew, qualifications and results.</p></div></div></section>' +
+    '<section class="welcome-boundary"><div><div class="eyebrow">IMPORTANT</div><h2>FlightOps is not MSFS Career Mode.</h2><p>It does not depend on Career Mode. You fly in the simulator. FlightOps provides the mission structure, operational records and progression around that flight.</p></div><div class="welcome-boundary-badge">NOT CAREER MODE</div></section>' +
+    '<section class="welcome-enter"><div><div class="eyebrow">READY TO OPERATE?</div><h2>Start with the next mission.</h2><p>Enter Flight Operations and take control of the operation.</p></div><button class="action primary" data-page="operations">Enter Flight Operations <span>→</span></button></section>';
 
 function operations() {
   const p = state.profile;
