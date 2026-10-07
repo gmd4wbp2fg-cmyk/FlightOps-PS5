@@ -60,6 +60,7 @@ const state = {
   adminPilots: [],
   adminAssignments: [],
   adminIndependentCompanies: [],
+  lastFlightResult: null,
   report: {
     outcome: "successful",
     landing: "good",
@@ -1210,6 +1211,29 @@ function career() {
     <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">20-Level Career Ladder</div><h2>Where you're going</h2></div><div class="ops-icon">⬆</div></div>${levelRows.map((r)=>{ const n=Number(r[0]); const targetXp=LEVEL_XP[n-1]; const targetHours=levelHours[n-1]; const status=n===current?"CURRENT":n<current?"COMPLETED":"LOCKED"; return `<div class="historyrow"><div><b>Level ${r[0]} • ${esc(r[1])}</b><div class="small">${esc(r[2])}</div><div class="small">Flight Time: ${targetHours}h • XP: ${num(targetXp)} XP</div></div><div class="${status==="CURRENT" ? "owned" : "small"}">${status}</div></div>`;}).join("")}</div>
   </div>`;
 }
+function flightResult() {
+  const r = state.lastFlightResult;
+  if (!r) { state.page = "pilot"; return pilot(); }
+  const completed = r.mission_complete !== false;
+  const score = r.performance_score != null ? Number(r.performance_score) : null;
+  const outcomeLabel = ({successful:"SUCCESSFUL",rough:"ROUGH FLIGHT",failed:"MISSION FAILED"})[r.outcome] || String(r.outcome || "RECORDED").toUpperCase();
+  const landingLabel = ({good:"GOOD",hard:"HARD",go_around:"GO-AROUND"})[r.landing] || String(r.landing || "—").toUpperCase();
+  return `<section class="hero result-hero"><div><div class="eyebrow">Flight Operations • Post-Flight Record</div><div class="result-status"><span class="ops-dot"></span> ${completed ? "FLIGHT COMPLETED" : "LEG COMPLETED"}</div><h1>${esc(r.title || "Flight Recorded")}</h1><p>${esc(r.route || "")} • ${esc(r.aircraft || "")}</p></div><div class="result-score"><div class="label">Flight Score</div><div class="result-score-number">${score != null ? score + "/100" : "RECORDED"}</div></div></section>
+  <div class="result-command-strip">
+    <div><span class="label">Outcome</span><strong>${outcomeLabel}</strong></div>
+    <div><span class="label">Landing</span><strong>${landingLabel}</strong></div>
+    <div><span class="label">Objective</span><strong>${esc(r.objective || "—")}</strong></div>
+    <div><span class="label">Aircraft</span><strong>${esc(r.aircraft || "—")}</strong></div>
+  </div>
+  <div class="grid">
+    <div class="card s8 result-reward-card"><div class="ops-section-head"><div><div class="eyebrow">01 • Flight Performance</div><h2>Operational Result</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> FILED</div></div>
+      <div class="result-rewards"><div><span class="label">Credits Earned</span><strong>+${num(r.credits || 0)} Cr</strong></div><div><span class="label">XP Earned</span><strong>+${num(r.xp || 0)} XP</strong></div><div><span class="label">Reputation</span><strong>+${num(r.reputation || 0)}</strong></div></div>
+      <div class="details"><div class="detail"><span class="label">Flight Time</span><strong>${r.flightMinutes ? Math.floor(Number(r.flightMinutes)/60)+"h "+(Number(r.flightMinutes)%60)+"m" : "—"}</strong></div><div class="detail"><span class="label">Distance</span><strong>${r.distanceNm ? num(r.distanceNm)+" NM" : "—"}</strong></div><div class="detail"><span class="label">Weather</span><strong>${esc(r.weather || "—")}</strong></div><div class="detail"><span class="label">Aircraft Condition</span><strong>${esc(r.condition || "—")}</strong></div></div>
+    </div>
+    <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">02 • Dispatch Status</div><h2>${completed ? "Contract Closed" : "Next Leg Released"}</h2></div><div class="ops-route-chip">${completed ? "COMPLETE" : "ACTIVE"}</div></div><p class="copy">${completed ? "The mission has been filed and closed. Your flight record is now part of your operational history." : "The submitted leg is recorded. FlightOps has advanced the operation to its next assigned leg."}</p></div>
+    <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">03 • Pilot Record</div><h2>What happens next?</h2></div></div><div class="result-next-grid"><div><b>${completed ? "Review your flight history" : "Continue the next leg"}</b><span>${completed ? "Your performance is now available in your Pilot Record." : "The next dispatch is ready when you are."}</span></div><div><b>Keep operating</b><span>Return to the Mission Board when you are ready for another assignment.</span></div></div><div class="result-actions"><button class="action primary" data-page="pilot">Open Pilot Record</button><button class="action" data-page="missions">Mission Board</button></div></div>
+  </div>`;
+}
 function pilot() {
   const p = state.profile || {};
   const flights = state.history || [];
@@ -1549,6 +1573,7 @@ function render() {
           brief,
           hangar,
           pilot,
+          result: flightResult,
           career,
           crew,
           training,
@@ -1946,6 +1971,23 @@ async function complete() {
     const newQuals = Array.isArray(d?.qualifications) ? d.qualifications : [];
     const flightToast = `${d?.mission_complete === false ? `Leg ${d.leg_number} complete • Next leg ${d.next_leg}: ${d.next_origin} → ${d.next_destination}` : "Flight recorded"}${d && d.credits != null ? ` • +${num(d.credits)} Cr, +${num(d.xp)} XP` : ""}${d && d.performance_score != null ? ` • Flight Score ${num(d.performance_score)}/100` : ""}${earned.length ? ` • ${earned.length} achievement${earned.length === 1 ? "" : "s"} earned` : ""}${newQuals.length ? ` • ${newQuals.length} new rating${newQuals.length === 1 ? "" : "s"}` : ""}.`;
     state.submitting = false;
+    state.lastFlightResult = {
+      title: missionTitle(state.active?.missions || state.active || {}),
+      route: route(state.active?.missions || state.active || {}),
+      aircraft: aircraftName(state.active?.aircraft_master || state.active || {}),
+      outcome: r.outcome,
+      landing: r.landing,
+      condition: r.condition,
+      objective: r.objective,
+      weather: weatherLabels[r.weather] || r.weather,
+      flightMinutes: r.flightMinutes,
+      distanceNm: r.distanceNm,
+      mission_complete: d?.mission_complete !== false,
+      credits: Number(d?.credits || 0),
+      xp: Number(d?.xp || 0),
+      reputation: Number(d?.reputation || 0),
+      performance_score: d?.performance_score,
+    };
     state.report = {
       outcome: "successful",
       landing: "good",
@@ -1960,7 +2002,7 @@ async function complete() {
     const completedEmployee = (state.staffAssignments || []).find(
       (a) => employeePendingBefore.includes(a.id) && a.status === "completed",
     );
-    state.page = d?.mission_complete === false ? "active" : "pilot";
+    state.page = d?.mission_complete === false ? "active" : "result";
     render();
     if (completedEmployee) {
       const employeeName = completedEmployee.employee_name || completedEmployee.staff_name || "Employee pilot";
