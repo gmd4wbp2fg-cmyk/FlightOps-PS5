@@ -900,6 +900,7 @@ function activeView() {
   const a = m.aircraft_master || m;
   return `<section class="hero"><div><div class="eyebrow">Active Mission • Dispatch</div><h1>${esc(missionTitle(m))}</h1><p>${esc(m.mission_code || m.id)} • ${esc(route(m))}</p></div><div><div class="label">Contract Value</div><div class="money">${num(m.reward_credits || m.credits)} Cr</div></div></section>
   <div class="brief-route-banner"><div><div class="eyebrow">ROUTE</div><strong>${esc(legs[0]?.origin_icao || m.origin_icao || "—")} → ${esc(legs[legs.length-1]?.destination_icao || m.destination_icao || "—")}</strong></div><div class="brief-route-stats"><span>${num(totalDistance)} NM</span><span>${esc(blockText)}</span><span>${esc(planning)}</span></div></div><div class="grid">
+    <div class="card s12 dispatch-accepted-card"><div class="dispatch-accepted-head"><div><div class="eyebrow">DISPATCH ACCEPTED • OPERATIONAL ASSIGNMENT</div><h2>Assignment Confirmed</h2><p class="copy">This mission is now assigned to you. The contract is locked, the selected aircraft is reserved for the operation, and the flight may proceed when you are ready.</p></div><div class="dispatch-accepted-badge"><span class="ops-dot"></span> ACTIVE</div></div><div class="dispatch-accepted-grid"><div><span class="label">Aircraft</span><strong>${esc(aircraftName(a))}</strong></div><div><span class="label">Route</span><strong>${esc(route(m))}</strong></div><div><span class="label">Contract</span><strong>${num(m.reward_credits || m.credits)} Cr</strong></div><div><span class="label">Next Step</span><strong>Preflight &amp; Dispatch</strong></div></div></div>
     <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Mission Card</div><h2>Ready for departure</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> DISPATCHED</div></div><div class="callout"><div class="eyebrow">${missionStoryLead(m)}</div><div class="small" style="margin-top:4px">MISSION STORY • ${missionStoryTitle(m)}</div><p style="margin:6px 0 0">${missionStory(m)}</p><p class="small" style="margin:10px 0 0">${missionStoryFooter(m)}</p></div><div class="details">
       <div class="detail"><div class="label">Aircraft</div><strong>${esc(aircraftName(a))}</strong></div>
       <div class="detail"><div class="label">Route</div><strong>${esc(route(m))}</strong></div>
@@ -1876,9 +1877,9 @@ async function accept() {
       p_aircraft_id: aircraftId,
     });
     if (result.error) throw result.error;
-    toast("Mission accepted. It will remain active after refresh.");
+    toast("Dispatch accepted. Your operational assignment is now active.");
     await load();
-    state.page = "home";
+    state.page = "active";
     render();
   } catch (e) {
     err(
