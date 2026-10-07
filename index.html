@@ -361,4 +361,11 @@
 @media(max-width:430px){
   .result-command-strip{grid-template-columns:1fr}
 }
+
+.next-operation-card{margin:18px 0;padding:22px;border:1px solid rgba(255,255,255,.13);border-radius:16px;background:linear-gradient(135deg,rgba(22,39,56,.96),rgba(10,19,29,.98));box-shadow:0 14px 34px rgba(0,0,0,.18)}
+.next-operation-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.next-operation-head h2{margin:5px 0 4px}.next-operation-head p{margin:0;max-width:760px;color:var(--muted)}
+.next-operation-status{white-space:nowrap;padding:9px 12px;border:1px solid rgba(255,255,255,.14);border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.08em}.next-operation-status .ops-dot{margin-right:7px}
+.next-operation-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:18px}.next-operation-grid>div{padding:12px;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:rgba(255,255,255,.025)}.next-operation-grid strong{display:block;margin-top:5px}.next-operation-reason{margin-top:12px;padding:12px;border-left:3px solid var(--accent,#f2c14e);background:rgba(255,255,255,.035);font-size:13px}.next-operation-card .result-actions{margin-top:16px}.next-operation-empty{background:rgba(255,255,255,.025)}
+@media(max-width:900px){.next-operation-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.next-operation-head{flex-direction:column}.next-operation-status{white-space:normal}}
+@media(max-width:560px){.next-operation-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.next-operation-card{padding:16px}}
 </style></head><body><div class="app"><header><div class="logo">FLIGHT<b>OPS</b> PS5</div><div class="mode">MSFS 2024 • FREE FLIGHT</div></header><nav id="nav"></nav><main id="app"></main></div><div id="toast" class="toast"></div><script type="module" src="/src/main.js"></script></body></html>
