@@ -1241,7 +1241,124 @@ function pilot() {
   const totalNm = flights.reduce((s, h) => s + Number(h.distance_nm || 0), 0);
   const successful = flights.filter((h) => String(h.outcome || "").toLowerCase() === "successful").length;
   const successRate = flights.length ? Math.round((successful / flights.length) * 100) : 0;
-  return `${loadNotice()}<section class="hero"><div><div class="eyebrow">Pilot Record</div><div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><div><h1>${esc(p.pilot_name || p.name || "Pilot")}</h1><p>${esc(p.callsign || "No callsign set")} • MSFS 2024 • PS5</p></div>${epaulet()}</div></div><button class="action" data-action="edit-profile">Edit profile</button></section><div class="grid"><div class="card s4"><div class="label">Level / XP</div><div class="stat">${level()} / ${num(p.xp)} XP</div></div><div class="card s4"><div class="label">Credits / Reputation</div><div class="stat">${num(p.credits)} Cr</div><div class="small">${num(p.reputation)} reputation</div></div><div class="card s4"><div class="label">Home Base</div><div class="stat">${esc(p.home_base_icao || "Not set")}</div><div class="small">Mission geography expands from this airport as your career grows.</div></div><div class="card s4"><div class="label">Qualifications</div><div class="small">${state.qualifications.map((x) => esc(x.qualifications?.name || x.qualifications?.code)).join("<br>") || "None"}</div></div><div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">Pilot Logbook</div><h2>${num(state.history.length)} Recent Flights</h2><div class="details"><div class="detail"><span class="label">Total Time</span><strong>${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m</strong></div><div class="detail"><span class="label">Total Distance</span><strong>${num(totalNm)} NM</strong></div><div class="detail"><span class="label">Successful</span><strong>${num(successRate)}%</strong></div></div>${state.history.length ? state.history.map((h) => `<div class="historyrow"><div><b>${esc(missionTitle(h.missions || h))}</b><div class="small">${esc(new Date(h.completed_at || h.created_at).toLocaleString())} • ${esc(aircraftName(h.aircraft_master || h))}</div><div class="small">${esc(route(h.missions || h))} • ${esc(h.outcome || "Recorded")} • Landing: ${esc(h.landing || h.landing_quality || "—")} • Score: ${h.performance_score != null ? `${num(h.performance_score)}/100` : "—"}</div><div class="small">Objective: ${esc(h.objective_result || h.objective || "—")} • Aircraft: ${esc(h.aircraft_condition || "—")}</div><div class="small">Flight time: ${h.flight_minutes ? `${Math.floor(Number(h.flight_minutes)/60)}h ${Number(h.flight_minutes)%60}m` : "—"} • Distance: ${h.distance_nm ? `${num(h.distance_nm)} NM` : "—"}</div></div><div style="text-align:right"><b class="owned">+${num(h.earned_credits || h.credits_earned || h.reward_credits)} Cr</b><div class="small">+${num(h.earned_xp || h.xp_earned || h.reward_xp)} XP</div><div class="small">Rep: ${num(h.earned_reputation || h.reputation_earned || 0)}</div></div></div>`).join("") : '<p class="small">Your completed flights will appear here.</p>'}</div></div>`;
+  const scored = flights.map((h) => Number(h.performance_score)).filter((n) => Number.isFinite(n));
+  const averageScore = scored.length ? Math.round(scored.reduce((s, n) => s + n, 0) / scored.length) : null;
+  const bestScore = scored.length ? Math.max(...scored) : null;
+  const totalCredits = flights.reduce((s, h) => s + Number(h.earned_credits || h.credits_earned || h.reward_credits || 0), 0);
+  const totalXp = flights.reduce((s, h) => s + Number(h.earned_xp || h.xp_earned || h.reward_xp || 0), 0);
+  const totalRep = flights.reduce((s, h) => s + Number(h.earned_reputation || h.reputation_earned || 0), 0);
+  const aircraftCounts = new Map();
+  flights.forEach((h) => {
+    const name = aircraftName(h.aircraft_master || h) || "Aircraft";
+    aircraftCounts.set(name, (aircraftCounts.get(name) || 0) + 1);
+  });
+  const aircraftFlown = [...aircraftCounts.entries()].sort((a, b) => b[1] - a[1]);
+  const failed = flights.filter((h) => String(h.outcome || "").toLowerCase() === "failed").length;
+  const rough = flights.filter((h) => String(h.outcome || "").toLowerCase() === "rough").length;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const qualificationNames = state.qualifications
+    .map((x) => x.qualifications?.name || x.qualifications?.code)
+    .filter(Boolean);
+  const recentFlights = flights.slice(0, 8);
+
+  const aircraftRows = aircraftFlown.length
+    ? aircraftFlown.map(([name, count]) => `<div class="pilot-aircraft-row"><div><b>${esc(name)}</b><div class="small">Recorded Flight Operations</div></div><strong>${num(count)}</strong></div>`).join("")
+    : '<p class="small">Aircraft flown will appear here after your first completed operation.</p>';
+
+  const recentRows = recentFlights.length
+    ? recentFlights.map((h) => `<div class="pilot-history-row">
+        <div class="pilot-history-main">
+          <div class="pilot-history-title"><b>${esc(missionTitle(h.missions || h))}</b><span class="ops-route-chip">FILED</span></div>
+          <div class="small">${esc(new Date(h.completed_at || h.created_at).toLocaleString())} • ${esc(aircraftName(h.aircraft_master || h))}</div>
+          <div class="small">${esc(route(h.missions || h))} • ${esc(String(h.outcome || "Recorded").replace(/_/g, " "))} • Landing: ${esc(h.landing || h.landing_quality || "—")}</div>
+        </div>
+        <div class="pilot-history-result">
+          <b>${h.performance_score != null ? num(h.performance_score) + "/100" : "RECORDED"}</b>
+          <span>+${num(h.earned_credits || h.credits_earned || h.reward_credits)} Cr</span>
+          <span>+${num(h.earned_xp || h.xp_earned || h.reward_xp)} XP</span>
+        </div>
+      </div>`).join("")
+    : '<p class="small">Your completed operations will become part of the official Pilot Record here.</p>';
+
+  return `${loadNotice()}
+  <section class="hero pilot-record-hero">
+    <div>
+      <div class="eyebrow">Flight Operations • Official Pilot Record</div>
+      <div class="pilot-record-title">
+        <div>
+          <h1>${esc(p.pilot_name || p.name || "Pilot")}</h1>
+          <p>${esc(p.callsign || "No callsign set")} • MSFS Free Flight • FlightOps Operations</p>
+        </div>
+        ${epaulet()}
+      </div>
+    </div>
+    <button class="action" data-action="edit-profile">Edit profile</button>
+  </section>
+
+  <div class="pilot-command-strip">
+    <div class="pilot-command-main"><span class="ops-dot"></span><div><span class="label">Record Status</span><strong>${flights.length ? "OPERATIONAL RECORD ACTIVE" : "READY FOR FIRST OPERATION"}</strong></div></div>
+    <div><span class="label">Level</span><strong>${level()}</strong></div>
+    <div><span class="label">Flights</span><strong>${num(flights.length)}</strong></div>
+    <div><span class="label">Success Rate</span><strong>${num(successRate)}%</strong></div>
+  </div>
+
+  <div class="grid pilot-summary-grid">
+    <div class="card s3 pilot-stat-card"><div class="label">Total Flight Time</div><div class="pilot-stat-value">${hours}h ${minutes}m</div><div class="small">Filed flight time</div></div>
+    <div class="card s3 pilot-stat-card"><div class="label">Total Distance</div><div class="pilot-stat-value">${num(totalNm)} NM</div><div class="small">Recorded distance flown</div></div>
+    <div class="card s3 pilot-stat-card"><div class="label">Average Score</div><div class="pilot-stat-value">${averageScore != null ? averageScore + "/100" : "—"}</div><div class="small">${bestScore != null ? "Best: " + bestScore + "/100" : "Scores appear after completed flights"}</div></div>
+    <div class="card s3 pilot-stat-card"><div class="label">Aircraft Flown</div><div class="pilot-stat-value">${num(aircraftFlown.length)}</div><div class="small">Unique aircraft in record</div></div>
+
+    <div class="card s4 ops-card">
+      <div class="ops-section-head"><div><div class="eyebrow">01 • Pilot Standing</div><h2>Current Status</h2></div><div class="ops-route-chip">LEVEL ${level()}</div></div>
+      <div class="pilot-standing-grid">
+        <div><span class="label">Credits</span><strong>${num(p.credits)} Cr</strong></div>
+        <div><span class="label">Reputation</span><strong>${num(p.reputation)}</strong></div>
+        <div><span class="label">XP</span><strong>${num(p.xp)} XP</strong></div>
+        <div><span class="label">Home Base</span><strong>${esc(p.home_base_icao || "Not set")}</strong></div>
+      </div>
+    </div>
+
+    <div class="card s4 ops-card">
+      <div class="ops-section-head"><div><div class="eyebrow">02 • Qualifications</div><h2>Ratings & Authorizations</h2></div><div class="ops-route-chip">${num(qualificationNames.length)} ACTIVE</div></div>
+      <div class="pilot-qualifications">${qualificationNames.length ? qualificationNames.map((q) => `<span>${esc(q)}</span>`).join("") : '<p class="small">No additional qualifications recorded.</p>'}</div>
+    </div>
+
+    <div class="card s4 ops-card">
+      <div class="ops-section-head"><div><div class="eyebrow">03 • Performance</div><h2>Operating Record</h2></div><div class="ops-route-chip">HISTORY</div></div>
+      <div class="pilot-performance-list">
+        <div><span>Successful operations</span><strong>${num(successful)}</strong></div>
+        <div><span>Rough flights</span><strong>${num(rough)}</strong></div>
+        <div><span>Mission failures</span><strong>${num(failed)}</strong></div>
+        <div><span>Scored flights</span><strong>${num(scored.length)}</strong></div>
+      </div>
+    </div>
+
+    <div class="card s8 ops-card">
+      <div class="ops-section-head"><div><div class="eyebrow">04 • Official Logbook</div><h2>Recent Flight Operations</h2><div class="small">The operational history of your FlightOps activity.</div></div><div class="ops-route-chip">LAST ${num(recentFlights.length)}</div></div>
+      <div class="pilot-history-list">${recentRows}</div>
+    </div>
+
+    <div class="card s4 ops-card">
+      <div class="ops-section-head"><div><div class="eyebrow">05 • Aircraft Record</div><h2>Aircraft Flown</h2></div><div class="ops-route-chip">${num(aircraftFlown.length)} TYPES</div></div>
+      <div class="pilot-aircraft-list">${aircraftRows}</div>
+    </div>
+
+    <div class="card s8 ops-card">
+      <div class="ops-section-head"><div><div class="eyebrow">06 • Progression</div><h2>Flight Earnings & Progress</h2></div><div class="ops-route-chip">LIFETIME RECORD</div></div>
+      <div class="pilot-progression-grid">
+        <div><span class="label">Flight Earnings</span><strong>+${num(totalCredits)} Cr</strong><small>Total recorded mission rewards</small></div>
+        <div><span class="label">Flight XP</span><strong>+${num(totalXp)} XP</strong><small>Total recorded flight XP</small></div>
+        <div><span class="label">Reputation Earned</span><strong>+${num(totalRep)}</strong><small>Total recorded flight reputation</small></div>
+      </div>
+    </div>
+
+    <div class="card s4 ops-card pilot-next-card">
+      <div class="ops-section-head"><div><div class="eyebrow">07 • Continue Operations</div><h2>Next Action</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> READY</div></div>
+      <p class="copy">Your Pilot Record is the permanent operational history behind every FlightOps assignment. Review your record, then return to the Mission Board when you are ready for the next operation.</p>
+      <div class="result-actions"><button class="action primary" data-page="missions">Mission Board</button></div>
+    </div>
+  </div>`;
 }
 function report() {
   const m = state.active?.missions || state.active;
