@@ -183,4 +183,37 @@
 @media(max-width:430px){
   .brief-command-strip{grid-template-columns:1fr}
 }
+
+/* Accepted Dispatch Release */
+.dispatch-accepted-card{
+  background:linear-gradient(135deg,#102d25,#0b1c24 62%,#0b1727);
+  border:1px solid #2d715d;
+  box-shadow:0 16px 44px #0005;
+}
+.dispatch-accepted-head{
+  display:flex;justify-content:space-between;gap:18px;align-items:flex-start;
+}
+.dispatch-accepted-head h2{margin:5px 0 7px;font-size:27px}
+.dispatch-accepted-badge{
+  display:inline-flex;align-items:center;gap:8px;padding:9px 12px;
+  border-radius:999px;background:#0a241d;border:1px solid #2d715d;
+  color:#6ff0bf;font-size:11px;font-weight:900;white-space:nowrap;
+}
+.dispatch-accepted-grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:16px;
+}
+.dispatch-accepted-grid>div{
+  background:#091b1d;border:1px solid #244c45;border-radius:11px;padding:11px 12px;
+}
+.dispatch-accepted-grid strong{
+  display:block;margin-top:4px;line-height:1.25;overflow-wrap:anywhere;
+}
+@media(max-width:760px){
+  .dispatch-accepted-head{display:block}
+  .dispatch-accepted-badge{margin-top:12px}
+  .dispatch-accepted-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:430px){
+  .dispatch-accepted-grid{grid-template-columns:1fr}
+}
 </style></head><body><div class="app"><header><div class="logo">FLIGHT<b>OPS</b> PS5</div><div class="mode">MSFS 2024 • FREE FLIGHT</div></header><nav id="nav"></nav><main id="app"></main></div><div id="toast" class="toast"></div><script type="module" src="/src/main.js"></script></body></html>
