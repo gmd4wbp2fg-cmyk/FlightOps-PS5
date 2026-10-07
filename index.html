@@ -368,4 +368,78 @@
 .next-operation-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-top:18px}.next-operation-grid>div{padding:12px;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:rgba(255,255,255,.025)}.next-operation-grid strong{display:block;margin-top:5px}.next-operation-reason{margin-top:12px;padding:12px;border-left:3px solid var(--accent,#f2c14e);background:rgba(255,255,255,.035);font-size:13px}.next-operation-card .result-actions{margin-top:16px}.next-operation-empty{background:rgba(255,255,255,.025)}
 @media(max-width:900px){.next-operation-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.next-operation-head{flex-direction:column}.next-operation-status{white-space:normal}}
 @media(max-width:560px){.next-operation-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.next-operation-card{padding:16px}}
+
+/* Fleet Command / Aircraft Operations */
+.fleet-command-hero{
+  align-items:stretch;
+  padding:22px 24px;
+  border:1px solid #315b7e;
+  border-radius:21px;
+  background:radial-gradient(circle at 78% 24%,#1b4968 0,#112b45 32%,#0b1727 72%);
+  box-shadow:0 18px 52px #0006;
+}
+.fleet-command-hero h1{margin-bottom:7px}
+.fleet-command-hero p{max-width:760px}
+.fleet-summary-card{min-height:112px}
+.fleet-summary-value{font-size:27px;font-weight:900;color:#eef7ff;margin-top:5px}
+.fleet-summary-base{font-size:22px}
+.fleet-command-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.fleet-command-card{
+  padding:17px;
+  background:linear-gradient(145deg,#102338,#0b1727);
+  border:1px solid #2a4d6b;
+  border-radius:16px;
+  box-shadow:0 12px 32px #0004;
+}
+.fleet-command-head{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}
+.fleet-command-head h3{font-size:21px;margin:5px 0 2px}
+.fleet-tail{font-size:12px;color:#76c8ff;font-weight:800;letter-spacing:.08em}
+.fleet-status{
+  flex:none;padding:7px 9px;border-radius:999px;
+  font-size:9px;font-weight:900;letter-spacing:.06em;
+  border:1px solid #31516d;
+}
+.fleet-status-ready{background:#0d241f;border-color:#2d715d;color:#6ff0bf}
+.fleet-status-active{background:#102a40;border-color:#3a73a0;color:#8bd2ff}
+.fleet-status-muted{background:#171b21;border-color:#414b55;color:#a8b2bb}
+.fleet-command-grid{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;margin-top:14px;
+}
+.fleet-command-grid>div{
+  min-width:0;padding:10px;background:#091827;
+  border:1px solid #213f5b;border-radius:10px;
+}
+.fleet-command-grid strong{display:block;margin-top:4px;overflow-wrap:anywhere;line-height:1.25}
+.fleet-command-callout{
+  margin-top:12px;padding:11px 12px;
+  border-left:3px solid var(--blue);
+  background:#0b1c2d;font-size:12px;line-height:1.45;
+}
+.fleet-command-callout.muted{border-left-color:#6e7b86;background:#111922}
+.fleet-command-ready{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  margin-top:12px;padding:10px 11px;
+  background:#0d241f;border:1px solid #244c45;border-radius:10px;
+  color:#6ff0bf;font-size:11px;
+}
+.fleet-command-ready span:last-child{margin-left:auto;color:#9bb1c2}
+.fleet-catalog-section{
+  margin-top:18px;padding:18px 0 8px;
+}
+@media(max-width:900px){
+  .fleet-command-list{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+  .fleet-command-hero{display:block;padding:18px}
+  .fleet-command-hero .money{margin-top:7px}
+  .fleet-command-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:500px){
+  .fleet-command-head{display:block}
+  .fleet-status{display:inline-flex;margin-top:10px}
+  .fleet-command-grid{grid-template-columns:1fr}
+  .fleet-command-ready span:last-child{margin-left:0;width:100%}
+}
+
 </style></head><body><div class="app"><header><div class="logo">FLIGHT<b>OPS</b> PS5</div><div class="mode">MSFS 2024 • FREE FLIGHT</div></header><nav id="nav"></nav><main id="app"></main></div><div id="toast" class="toast"></div><script type="module" src="/src/main.js"></script></body></html>
