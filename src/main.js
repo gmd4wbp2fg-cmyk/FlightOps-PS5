@@ -1523,10 +1523,21 @@ function updates() {
     notice: "📢 NOTICE",
     general: "📣 UPDATE",
   }[category] || "📣 UPDATE");
-  return `<section class="hero"><div><div class="eyebrow">FlightOps Communications</div><h1>Updates & Release Notes</h1><p>Follow new features, aircraft, missions, fixes, and important pilot notices as FlightOps continues to evolve.</p></div><div><div class="label">Published Updates</div><div class="money">${items.length}</div></div></section>
-  <div class="grid">${items.length ? items.map((a) => `<div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">${label(a.category)}</div><h2>${esc(a.title)}</h2></div><div class="ops-route-chip">${esc(new Date(a.published_at).toLocaleDateString())}</div></div><p class="copy">${esc(a.body)}</p></div>`).join("") : '<div class="card s12"><h2>No release notes yet</h2><p class="small">New FlightOps changes will appear here automatically.</p></div>'}</div>`;
+  const grouped = items.reduce((acc, a) => {
+    const key = String(a.category || "general").toLowerCase();
+    (acc[key] ||= []).push(a);
+    return acc;
+  }, {});
+  const latest = items[0];
+  const latestDate = latest?.published_at ? new Date(latest.published_at).toLocaleDateString() : "—";
+  const updateRows = items.length
+    ? items.map((a) => '<article class="update-release"><div class="update-release-mark">' + esc(label(a.category).split(" ")[0]) + '</div><div class="update-release-body"><div class="update-release-top"><div><div class="eyebrow">' + esc(label(a.category)) + '</div><h2>' + esc(a.title) + '</h2></div><div class="ops-route-chip">' + esc(new Date(a.published_at).toLocaleDateString()) + '</div></div><p class="copy">' + esc(a.body) + '</p></div></article>').join("")
+    : '<div class="updates-empty"><div class="label">RELEASE CHANNEL</div><h2>No release notes yet</h2><p class="small">New FlightOps changes will appear here automatically.</p></div>';
+  return '<section class="hero updates-command-hero"><div><div class="eyebrow">FlightOps Communications • Release Control</div><h1>Updates & Release Notes.</h1><p>Official FlightOps communications for new capabilities, aircraft, missions, fixes and operational notices. This is the record of how the system is evolving.</p></div><div class="hero-stat"><b>' + num(items.length) + '</b><span>Published updates</span></div></section>' +
+    '<section class="updates-status"><div><div class="label">CHANNEL STATUS</div><strong>● PUBLISHED</strong></div><div><div class="label">LATEST RELEASE</div><strong>' + esc(latestDate) + '</strong></div><div><div class="label">FEATURES</div><strong>' + num(grouped.feature?.length || 0) + '</strong></div><div><div class="label">FIXES</div><strong>' + num(grouped.fix?.length || 0) + '</strong></div></section>' +
+    '<section class="grid updates-overview"><div class="card s8 updates-feature-card"><div class="eyebrow">Operational Communications</div><h2>Stay current with FlightOps.</h2><p class="copy">Release notes keep pilots informed about changes that can affect the way missions are planned, dispatched, flown and recorded.</p><div class="updates-pill-row"><span>FEATURES</span><span>FIXES</span><span>MISSIONS</span><span>NOTICES</span></div></div><div class="card s4 updates-channel-card"><div class="label">COMMUNICATION STANDARD</div><div class="updates-channel-value">CLEAR</div><p class="small">Operational changes are published here so pilots can review them before continuing their next flight.</p></div></section>' +
+    '<section class="card updates-release-card"><div class="ops-section-head"><div><div class="eyebrow">Release History</div><h2>Published FlightOps Updates</h2></div><div class="ops-route-chip">' + num(items.length) + ' RELEASES</div></div><div class="updates-release-list">' + updateRows + '</div></section>';
 }
-
 function admin() {
   const a = state.adminOverview || {};
   const staff = state.adminStaff || [];
