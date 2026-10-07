@@ -1746,6 +1746,7 @@ function crew() {
     '<div class="s12"><div class="ops-section-head crew-section-head"><div><div class="eyebrow">Talent Acquisition</div><h2>Recruiting Pipeline</h2><p class="small">Build the next layer of your operation with pilots selected for capability and reliability.</p></div><div class="ops-route-chip">' + num(candidates.length) + ' CANDIDATES</div></div></div>' +
     (candidateCards || '<div class="card s12 ops-card crew-empty-card"><div class="crew-empty-icon">RECRUITING</div><h3>No candidates currently available.</h3><p class="small">Check back when the hiring board refreshes.</p></div>') +
     '</section>' + trainingModal;
+}
 
 function training() {
   const staff = state.staff || [];
