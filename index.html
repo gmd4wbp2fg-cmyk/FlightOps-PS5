@@ -249,6 +249,67 @@
   .active-command-strip .active-command-main{grid-column:auto}
 }
 
+/* Pilot Record / Official Logbook */
+.pilot-record-hero{
+  align-items:stretch;padding:22px 24px;border:1px solid #315b7e;border-radius:21px;
+  background:radial-gradient(circle at 78% 24%,#1b4968 0,#112b45 32%,#0b1727 72%);
+  box-shadow:0 18px 52px #0006;
+}
+.pilot-record-title{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.pilot-record-title h1{margin-bottom:5px}
+.pilot-command-strip{
+  display:grid;grid-template-columns:2fr repeat(3,minmax(0,1fr));gap:10px;margin:0 0 15px;
+  padding:11px;background:#091827;border:1px solid #294a67;border-radius:16px;
+}
+.pilot-command-strip>div{
+  min-width:0;padding:11px 12px;background:#0d2034;border:1px solid #213f5b;border-radius:11px;
+}
+.pilot-command-strip strong{display:block;margin-top:4px;color:#eef7ff;overflow-wrap:anywhere}
+.pilot-command-main{display:flex;align-items:center;gap:9px}
+.pilot-command-main strong{color:#6ff0bf}
+.pilot-stat-card{min-height:108px}
+.pilot-stat-value{font-size:25px;font-weight:900;color:#eef7ff;margin-top:5px}
+.pilot-standing-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.pilot-standing-grid>div{padding:11px;background:#0a1727;border:1px solid var(--line);border-radius:11px}
+.pilot-standing-grid strong{display:block;margin-top:4px;color:#eef7ff;overflow-wrap:anywhere}
+.pilot-qualifications{display:flex;flex-wrap:wrap;gap:8px}
+.pilot-qualifications span{padding:8px 10px;border-radius:999px;background:#0b2135;border:1px solid #28516f;color:#cfe8fb;font-size:12px;font-weight:800}
+.pilot-performance-list{display:grid;gap:8px}
+.pilot-performance-list>div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.pilot-performance-list>div:last-child{border-bottom:0}
+.pilot-performance-list span{color:var(--muted)}
+.pilot-history-list{display:grid}
+.pilot-history-row{display:flex;justify-content:space-between;gap:16px;padding:14px 0;border-top:1px solid var(--line)}
+.pilot-history-row:first-child{border-top:0}
+.pilot-history-main{min-width:0}
+.pilot-history-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.pilot-history-title .ops-route-chip{font-size:9px;padding:4px 7px}
+.pilot-history-result{text-align:right;min-width:115px}
+.pilot-history-result b{display:block;color:#f4ca5c;font-size:17px}
+.pilot-history-result span{display:block;color:var(--muted);font-size:11px;margin-top:2px}
+.pilot-aircraft-list{display:grid}
+.pilot-aircraft-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}
+.pilot-aircraft-row:first-child{border-top:0}
+.pilot-aircraft-row strong{color:#6dc2ff;font-size:18px}
+.pilot-progression-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.pilot-progression-grid>div{padding:14px;background:#0a1727;border:1px solid var(--line);border-radius:11px}
+.pilot-progression-grid strong{display:block;margin-top:5px;color:#6ff0bf;font-size:20px}
+.pilot-progression-grid small{display:block;color:var(--muted);margin-top:5px;line-height:1.35}
+.pilot-next-card .copy{max-width:720px}
+@media(max-width:760px){
+  .pilot-command-strip{grid-template-columns:1fr 1fr}
+  .pilot-command-main{grid-column:1 / -1}
+  .pilot-progression-grid{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+  .pilot-command-strip{grid-template-columns:1fr}
+  .pilot-command-main{grid-column:auto}
+  .pilot-record-title{align-items:flex-start}
+  .pilot-history-row{flex-direction:column}
+  .pilot-history-result{text-align:left;min-width:0}
+  .pilot-standing-grid{grid-template-columns:1fr}
+}
+ 
 /* Post-Flight Results Presentation */
 .result-hero{
   align-items:stretch;padding:22px 24px;border:1px solid #315b7e;border-radius:21px;
