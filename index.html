@@ -145,4 +145,42 @@
   .brief-route-banner{display:block}
   .brief-route-stats{justify-content:flex-start;margin-top:10px}
 }
+
+/* Dispatch Command Strip */
+.brief-command-strip{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+  margin:0 0 16px;
+  padding:12px;
+  background:linear-gradient(135deg,#0b1b2c,#081522);
+  border:1px solid #294a67;
+  border-radius:16px;
+  box-shadow:inset 0 1px #ffffff08,0 10px 28px #0003;
+}
+.brief-command-strip>div{
+  min-width:0;
+  padding:10px 12px;
+  background:#0d2034;
+  border:1px solid #213f5b;
+  border-radius:11px;
+}
+.brief-command-strip strong{
+  display:block;
+  margin-top:4px;
+  color:#eef7ff;
+  font-size:13px;
+  line-height:1.2;
+  overflow-wrap:anywhere;
+}
+.brief-command-strip .small{display:block;margin-top:4px;font-size:11px}
+.brief-command-strip>div:first-child{border-color:#285e4e;background:#0d241f}
+.brief-command-strip>div:first-child strong{color:#6ff0bf}
+@media(max-width:760px){
+  .brief-command-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:9px}
+  .brief-command-strip>div{padding:9px}
+}
+@media(max-width:430px){
+  .brief-command-strip{grid-template-columns:1fr}
+}
 </style></head><body><div class="app"><header><div class="logo">FLIGHT<b>OPS</b> PS5</div><div class="mode">MSFS 2024 • FREE FLIGHT</div></header><nav id="nav"></nav><main id="app"></main></div><div id="toast" class="toast"></div><script type="module" src="/src/main.js"></script></body></html>
