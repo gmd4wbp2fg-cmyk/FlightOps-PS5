@@ -1078,12 +1078,12 @@ function brief() {
     : (state.selectedAircraftId || ownedChoices[0]?.id || m.required_aircraft_id);
   const a = ownedChoices.find((x) => x.id === selectedId) || (multipleAircraft ? {} : (m.aircraft_master || m));
   const selectedOwned = ownedChoices.find((x) => x.id === selectedId) || null;
+  const legs = missionLegs(m);
   const selectedBase = String(selectedOwned ? (state.aircraft.find((x) => (x.aircraft_id || x.aircraft_master?.id) === selectedOwned.id)?.base_icao || "") : "").trim().toUpperCase();
   const missionOrigin = String(m.origin_icao || m.departure_icao || legs?.[0]?.origin_icao || "").trim().toUpperCase();
   const aircraftAtOrigin = !!selectedOwned && !!missionOrigin && selectedBase === missionOrigin;
   const q = m.required_qualification?.code || m.required_qualification_code || "Pilot qualification";
   const planning = m.planning_level || (m.required_aircraft_id === "c172" ? "Suggested planning" : "Pilot planning");
-  const legs = missionLegs(m);
   const totalDistance = Number(m.distance_nm || legs.reduce((s,l)=>s+Number(l.distance_nm||0),0) || 0);
   const cruise = Number(a.cruise_kts || 0);
   const blockMinutes = cruise > 0 && totalDistance > 0 ? Math.round((totalDistance / cruise) * 60 * 1.12) : null;
