@@ -548,6 +548,34 @@
 /* Pilot Profile presentation */
 .profile-command-hero{align-items:stretch;padding:22px 24px;border:1px solid #315b7e;border-radius:21px;background:radial-gradient(circle at 82% 24%,#1b4968 0,#112b45 32%,#0b1727 72%);box-shadow:0 18px 52px #0006}.profile-command-hero h1{margin:7px 0}.profile-command-hero p{max-width:760px;color:#c5d7e9}.profile-edit-grid{margin-top:16px}.profile-edit-card{padding:18px}.profile-edit-card .form{gap:14px}.profile-edit-card input{margin-top:7px}.profile-base-note{padding:13px 14px;border:1px solid #294a67;border-radius:12px;background:#0a1929}.profile-base-note b{display:block;color:#eef7ff;margin-bottom:4px}.profile-base-note span{font-size:12px;color:#91a5bd}.profile-guidance-card{height:100%;padding:16px;background:linear-gradient(145deg,#10263d,#0b1829);border-color:#294966}.profile-guidance-card h3{font-size:19px;margin:8px 0}.profile-guidance-card .callout{margin-top:16px;border-left:3px solid #39d6a0;background:linear-gradient(90deg,#0d241f,#0b1b2a)}
 @media(max-width:760px){.profile-command-hero{display:block;padding:18px}.profile-edit-card,.profile-guidance-card{padding:14px}.profile-edit-grid{margin-top:12px}}
+
+/* Dispatch Brief Upgrade */
+.brief-hero{
+  display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:20px;align-items:stretch;
+  margin:10px 0 14px;padding:22px;
+  background:linear-gradient(135deg,#132c47,#0a1727 72%);
+  border:1px solid #315b7e;border-radius:20px;box-shadow:0 18px 48px #0005;
+  position:relative;overflow:hidden
+}
+.brief-hero:after{content:"";position:absolute;right:-90px;top:-90px;width:250px;height:250px;border-radius:50%;background:#46a8ff0d;box-shadow:0 0 90px #46a8ff12}
+.brief-hero-main{position:relative;z-index:1}.brief-hero h1{font-size:36px;margin:12px 0 6px}.brief-hero p{color:#b9cbe0;margin:0;font-weight:700}
+.brief-status-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.brief-value{position:relative;z-index:1;align-self:center;text-align:right;padding-left:18px;border-left:1px solid #31506c}
+.brief-value .money{font-size:32px;margin:4px 0}.brief-command-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#28415e;border:1px solid #28415e;border-radius:14px;overflow:hidden;margin:0 0 16px}
+.brief-command-strip>div{background:#0c1a2b;padding:14px 15px;min-width:0}.brief-command-strip strong{display:block;margin:4px 0;font-size:14px}.brief-command-strip .small{display:block}
+.flightops-rules-brief{margin:20px 0;padding:18px;border:1px solid #315b7e;border-radius:15px;background:linear-gradient(145deg,#0d2237,#091522)}
+.flightops-rules-brief h3{margin:6px 0 14px;font-size:21px}.flightops-rules-brief-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.flightops-rules-brief-grid>div{background:#0a1727;border:1px solid #28415e;border-radius:11px;padding:12px}
+.flightops-rules-brief-grid b{display:block;color:#dff1ff;font-size:12px;letter-spacing:.6px}.flightops-rules-brief-grid span{display:block;color:var(--muted);font-size:12px;line-height:1.45;margin-top:4px}
+.flightops-rules-brief-callout{margin-top:12px;padding:12px 13px;border-left:3px solid var(--gold);background:#171a20;border-radius:8px}
+.brief-aircraft-status{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:16px 0;padding:14px 16px;border-radius:13px;border:1px solid #315b7e;background:#0a1727}
+.brief-aircraft-status.ready{border-color:#2c765f;background:#0b211c}.brief-aircraft-status.reposition{border-color:#705d32;background:#211b0d}
+.brief-aircraft-status strong{display:block;margin-top:3px}.brief-aircraft-status .status-badge{padding:7px 10px;border-radius:999px;font-size:11px;font-weight:900;white-space:nowrap;background:#123b31;color:#72e6bd;border:1px solid #2d6c59}
+.brief-aircraft-status.reposition .status-badge{background:#3a2d13;color:#f3d47a;border-color:#705d32}
+@media(max-width:760px){
+ .brief-hero{grid-template-columns:1fr;padding:18px}.brief-hero h1{font-size:29px}.brief-value{text-align:left;border-left:0;border-top:1px solid #31506c;padding:14px 0 0}
+ .brief-command-strip{grid-template-columns:repeat(2,1fr)}.flightops-rules-brief-grid{grid-template-columns:1fr}
+}
 </style>
 <style id="crew-personnel-command-polish">
 /* Crew Personnel Command polish */
