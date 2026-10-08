@@ -1159,7 +1159,7 @@ function brief() {
     </div>
     <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">07 • Mission Objective</div><h2>Success Standard</h2></div><div class="ops-icon">✓</div></div><div class="callout"><b>${esc(m.objective || m.mission_objective || "Complete the assigned route safely and accomplish the mission objective.")}</b></div><p class="copy">Mission success is determined during debrief. Safe flight and objective completion matter more than simply reaching the destination.</p></div>
     <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">08 • Compensation</div><h2>${num(m.reward_credits || m.credits)} Cr</h2></div><div class="ops-icon">◆</div></div><p class="small">Base XP: +${num(m.reward_xp || m.xp)} XP</p><p class="small">Final rewards are adjusted for flight outcome, landing, objective completion and aircraft condition.</p></div>
-    <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">09 • Dispatch Decision</div><h2>Ready for Departure?</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> ${state.active ? "MISSION UNAVAILABLE" : "CONTRACT OPEN"}</div></div><p class="copy">Accepting this release locks the contract to your pilot. Only one active mission is permitted at a time.</p><button class="action primary" data-action="accept" ${state.active ? "disabled" : ""}>Accept Mission</button> <button class="action" data-page="missions">Back to Mission Board</button></div>
+    <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">09 • Dispatch Decision</div><h2>Ready for Departure?</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> ${state.active ? "MISSION UNAVAILABLE" : "CONTRACT OPEN"}</div></div><p class="copy">Accepting this release locks the contract to your pilot. Only one active mission is permitted at a time.</p><button class="action primary" data-action="accept" ${state.active ? "disabled" : ""}>Accept Mission</button> <button class="action" data-action="reposition" ${state.active ? "disabled" : ""}>Fly Reposition First</button> <button class="action" data-page="missions">Back to Mission Board</button></div>
   </div>`;
 }
 function hangar() {
@@ -2178,6 +2178,32 @@ async function accept() {
       e,
       "Mission acceptance failed. The mission may no longer be available.",
     );
+  }
+}
+async function startReposition() {
+  try {
+    if (state.active) throw new Error("You already have an active flight.");
+    const m = state.selected;
+    if (!m) throw new Error("No mission is selected.");
+    const choices = ownedMissionAircraft(m);
+    const aircraftId = state.selectedAircraftId || (choices.length === 1 ? choices[0].id : null);
+    if (!aircraftId) throw new Error("Select the aircraft you want to reposition.");
+    const owned = state.aircraft.find((x) => (x.aircraft_id || x.aircraft_master?.id) === aircraftId);
+    const origin = String(owned?.base_icao || state.profile?.home_base_icao || "").trim().toUpperCase();
+    const destination = String(m.origin_icao || m.departure_icao || "").trim().toUpperCase();
+    if (!origin || !destination) throw new Error("The aircraft or mission does not have a valid airport location.");
+    if (origin === destination) throw new Error("This aircraft is already at the mission origin.");
+    const result = await sb.rpc("start_reposition_operation", {
+      p_aircraft_id: aircraftId,
+      p_destination_icao: destination,
+    });
+    if (result.error) throw result.error;
+    toast("Reposition flight created. Fly the aircraft to the mission origin.");
+    await load();
+    state.page = "active";
+    render();
+  } catch (e) {
+    err(e, "Unable to start reposition flight.");
   }
 }
 async function complete() {
