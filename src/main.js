@@ -2066,6 +2066,7 @@ function bind() {
   $('[data-action="login"]')?.addEventListener("click", login);
   $('[data-action="signup"]')?.addEventListener("click", signup);
   $('[data-action="accept"]')?.addEventListener("click", accept);
+  $('[data-action="reposition"]')?.addEventListener("click", startReposition);
   $("#app").querySelectorAll("[data-aircraft-choice]").forEach((b) => b.addEventListener("click", () => { state.selectedAircraftId = b.dataset.aircraftChoice; render(); }));
   $('[data-action="report"]')?.addEventListener("click", () => {
     state.page = "report";
