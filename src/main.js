@@ -1024,7 +1024,7 @@ function missionRecommendationScore(m) {
 function missionList() {
   const active = activeMission();
   const activeId = active ? missionId(active) : null;
-  const allMissions = missions().filter((m) => missionId(m) !== activeId);
+  const allMissions = missions().filter((m) => missionId(m) !== activeId && String(m.template_id || "").toUpperCase() !== "REPOSITION" && String(m.mission_type || "").toUpperCase() !== "REPOSITION");
   const filter = String(state.missionFilter || "ALL").toUpperCase();
   const ms = allMissions.filter((m) => {
     if (filter === "ALL") return true;
@@ -1077,6 +1077,10 @@ function brief() {
     ? state.selectedAircraftId
     : (state.selectedAircraftId || ownedChoices[0]?.id || m.required_aircraft_id);
   const a = ownedChoices.find((x) => x.id === selectedId) || (multipleAircraft ? {} : (m.aircraft_master || m));
+  const selectedOwned = ownedChoices.find((x) => x.id === selectedId) || null;
+  const selectedBase = String(selectedOwned ? (state.aircraft.find((x) => (x.aircraft_id || x.aircraft_master?.id) === selectedOwned.id)?.base_icao || "") : "").trim().toUpperCase();
+  const missionOrigin = String(m.origin_icao || m.departure_icao || legs?.[0]?.origin_icao || "").trim().toUpperCase();
+  const aircraftAtOrigin = !!selectedOwned && !!missionOrigin && selectedBase === missionOrigin;
   const q = m.required_qualification?.code || m.required_qualification_code || "Pilot qualification";
   const planning = m.planning_level || (m.required_aircraft_id === "c172" ? "Suggested planning" : "Pilot planning");
   const legs = missionLegs(m);
@@ -1159,7 +1163,7 @@ function brief() {
     </div>
     <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">07 • Mission Objective</div><h2>Success Standard</h2></div><div class="ops-icon">✓</div></div><div class="callout"><b>${esc(m.objective || m.mission_objective || "Complete the assigned route safely and accomplish the mission objective.")}</b></div><p class="copy">Mission success is determined during debrief. Safe flight and objective completion matter more than simply reaching the destination.</p></div>
     <div class="card s4 ops-card"><div class="ops-section-head"><div><div class="eyebrow">08 • Compensation</div><h2>${num(m.reward_credits || m.credits)} Cr</h2></div><div class="ops-icon">◆</div></div><p class="small">Base XP: +${num(m.reward_xp || m.xp)} XP</p><p class="small">Final rewards are adjusted for flight outcome, landing, objective completion and aircraft condition.</p></div>
-    <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">09 • Dispatch Decision</div><h2>Ready for Departure?</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> ${state.active ? "MISSION UNAVAILABLE" : "CONTRACT OPEN"}</div></div><p class="copy">Accepting this release locks the contract to your pilot. Only one active mission is permitted at a time.</p><button class="action primary" data-action="accept" ${state.active ? "disabled" : ""}>Accept Mission</button> <button class="action" data-action="reposition" ${state.active ? "disabled" : ""}>Fly Reposition First</button> <button class="action" data-page="missions">Back to Mission Board</button></div>
+    <div class="card s12 ops-card"><div class="ops-section-head"><div><div class="eyebrow">09 • Dispatch Decision</div><h2>Ready for Departure?</h2></div><div class="ops-route-chip"><span class="ops-dot"></span> ${state.active ? "MISSION UNAVAILABLE" : "CONTRACT OPEN"}</div></div><p class="copy">Accepting this release locks the contract to your pilot. Only one active mission is permitted at a time.</p><button class="action primary" data-action="accept" ${state.active || !aircraftAtOrigin ? "disabled" : ""}>${aircraftAtOrigin ? "Accept Mission" : "Select aircraft at origin"}</button> ${!aircraftAtOrigin ? `<button class="action" data-action="reposition" ${state.active ? "disabled" : ""}>Fly Reposition First</button>` : ""} <button class="action" data-page="missions">Back to Mission Board</button></div>
   </div>`;
 }
 function hangar() {
