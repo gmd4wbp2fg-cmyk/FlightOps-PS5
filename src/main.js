@@ -1099,8 +1099,7 @@ function brief() {
     <div><span class="label">Difficulty</span><strong>${esc(m.difficulty || "STANDARD")}</strong><span class="small">${esc(q)}</span></div>
     <div><span class="label">Weather</span><strong>LIVE WEATHER</strong><span class="small">MSFS Live Weather required</span></div>
   </div>
-  <div class="grid">
-    <div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">01 • Dispatch Information</div><h2>Operational Release</h2></div><div class="ops-icon">✈</div></div>
+  <div class="brief-aircraft-status ${aircraftAtOrigin ? "ready" : "reposition"}"><div><span class="label">Aircraft Location Check</span><strong>${esc(selectedOwned ? aircraftName(selectedOwned) : "Aircraft selection required")}</strong><span class="small">${selectedOwned ? `Current base: ${esc(selectedBase || "—")} • Mission origin: ${esc(missionOrigin || "—")}` : "Select an eligible aircraft to verify its current location."}</span></div><div class="status-badge">${selectedOwned ? (aircraftAtOrigin ? "✓ AT ORIGIN" : "↗ REPOSITION REQUIRED") : "SELECT AIRCRAFT"}</div></div>  <div class="grid"><div class="card s8 ops-card"><div class="ops-section-head"><div><div class="eyebrow">01 • Dispatch Information</div><h2>Operational Release</h2></div><div class="ops-icon">✈</div></div>
       <div class="callout"><div class="eyebrow">MISSION STORY</div><p style="margin:6px 0 0">${missionStory(m)}</p></div>
       <div class="notice"><b>LIVE WEATHER REQUIRED</b> — This mission must be flown in MSFS 2024 using Live Weather. FlightOps does not create or control simulator weather.</div>
       ${m.water_operation ? '<div class="notice"><b>🌊 WATER OPERATION</b> — This release requires a float/amphibious-equipped aircraft and a suitable water landing/takeoff area. Verify actual water conditions, wind, obstacles, surface, depth/clearance, and local operating considerations in MSFS before departure.</div>' : ""}
