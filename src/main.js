@@ -226,6 +226,7 @@ function missionStorySourceLabel(m) {
 }
 function missionStoryFooter(m) {
   const type = String(m?.mission_type || m?.type || "").toUpperCase();
+  if (type.includes("REPOSITION")) return "This is a non-revenue aircraft movement, not a customer contract. Fly and land at the stated destination in MSFS; FlightOps will update the aircraft location after the flight is completed. No contract credits or XP are awarded.";
   if (type.includes("MEDEVAC") || type.includes("MEDICAL")) return "This assignment exists to support a real operational need. Complete the mission objective and record the flight accurately.";
   if (isBushMission(m) || m?.water_operation) return "This assignment supports a location where normal surface access is limited. The aircraft is providing the transportation link.";
   if (type.includes("CHARTER") || type.includes("VIP") || type.includes("EXECUTIVE")) return "The customer has contracted the aircraft for this scheduled movement. Professional passenger service is part of the assignment.";
@@ -235,6 +236,7 @@ function missionStoryFooter(m) {
 function missionStoryLead(m) {
   const type = String(m?.mission_type || m?.type || "").toUpperCase();
   const title = String(m?.title || "").toLowerCase();
+  if (type.includes("REPOSITION") || title.includes("aircraft reposition")) return "FLEET MOVEMENT — Aircraft reposition";
   if (type.includes("MEDEVAC")) return "DISPATCH REQUEST — Patient transport";
   if (type.includes("MEDICAL")) return "DISPATCH REQUEST — Medical supply movement";
   if (title.includes("rescue") || title.includes("evacuation")) return "DISPATCH REQUEST — Emergency support";
@@ -250,6 +252,12 @@ function missionStoryLead(m) {
 function missionStory(m) {
   const type = String(m?.mission_type || m?.type || "").toUpperCase();
   const title = String(m?.title || "").toLowerCase();
+  if (type.includes("REPOSITION") || title.includes("aircraft reposition")) {
+    const originCode = m?.origin_icao || "the current airport";
+    const destinationCode = m?.destination_icao || "the next mission airport";
+    const distance = Number(m?.distance_nm || m?.distance || 0);
+    return "Your aircraft is currently at " + originCode + ", while your next operation requires it at " + destinationCode + ". Fly the aircraft to the required departure airport before accepting that assignment. This reposition flight covers " + (distance > 0 ? Math.round(distance) + " NM" : "the planned route") + " and must be completed as a real flight in MSFS. Land at " + destinationCode + " so FlightOps can record the aircraft’s new location.";
+  }
   const origin = m?.origin_airport?.name || m?.origin_airport?.airport_name || m?.origin_icao || "the departure airport";
   const destination = m?.destination_airport?.name || m?.destination_airport?.airport_name || m?.destination_icao || "the destination";
   const p = missionPayload(m);
@@ -971,6 +979,7 @@ function operations() {
 function missionStoryTitle(m) {
   const type = String(m?.mission_type || m?.type || "").toUpperCase();
   const title = String(m?.title || "").toLowerCase();
+  if (type.includes("REPOSITION") || title.includes("aircraft reposition")) return "Aircraft Reposition";
   if (type.includes("MEDEVAC") || title.includes("medevac")) return "Patient Transfer";
   if (type.includes("MEDICAL") || title.includes("medical")) return "Medical Logistics";
   if (title.includes("rescue") || title.includes("evacuation")) return "Emergency Response";
