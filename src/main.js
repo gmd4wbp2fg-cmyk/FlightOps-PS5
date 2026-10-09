@@ -440,7 +440,8 @@ async function load() {
   // browser path. This avoids losing a real contract when the direct table read
   // is affected by the table's RLS visibility.
   const activeRpc = await sb.rpc("get_active_mission_for_current_pilot");
-  if (!activeRpc.error && activeRpc.data) {
+  if (!activeRpc.error && activeRpc.data &&
+      ["accepted", "in_progress"].includes(String(activeRpc.data.status || "").toLowerCase())) {
     base[4] = { data: activeRpc.data, error: null };
   } else if (activeRpc.error) {
     state.loadErrors.push(`active mission RPC: ${activeRpc.error.message || "request failed"}`);
