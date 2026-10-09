@@ -616,13 +616,14 @@ async function load() {
   // Resolve the active contract deterministically. The primary query uses maybeSingle(),
   // but a malformed/empty response must never make a real active mission disappear.
   let active =
-    activeData && !Array.isArray(activeData) ? activeData : null;
+    activeData && !Array.isArray(activeData) && ["accepted", "in_progress"].includes(String(activeData.status || "").toLowerCase()) ? activeData : null;
 
   if (!active) {
     const activeFallback = await sb
       .from("active_missions")
       .select("*")
       .eq("pilot_id", uid)
+      .in("status", ["accepted", "in_progress"])
       .order("accepted_at", { ascending: false })
       .limit(1);
     if (activeFallback.error) {
@@ -2170,7 +2171,8 @@ async function rpc(name, candidates) {
 }
 async function accept() {
   try {
-    if (state.active) throw new Error("You already have an active mission.");
+    if (state.active && ["accepted", "in_progress"].includes(String(state.active.status || "").toLowerCase())) throw new Error("You already have an active mission.");
+    if (state.active) state.active = null;
     if (
       !state.selected ||
       !missions().some(
