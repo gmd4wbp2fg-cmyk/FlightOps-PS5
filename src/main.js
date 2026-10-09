@@ -860,7 +860,8 @@ async function loadActiveMissionDirect() {
 
   if (!active) {
     const rpc = await sb.rpc("get_active_mission_for_current_pilot");
-    if (!rpc.error && rpc.data && typeof rpc.data === "object") active = rpc.data;
+    if (!rpc.error && rpc.data && typeof rpc.data === "object" &&
+        ["accepted", "in_progress", "active", "dispatched"].includes(String(rpc.data.status || "").toLowerCase())) active = rpc.data;
   }
 
   if (!active) {
