@@ -878,11 +878,23 @@ async function loadActiveMissionDirect() {
 
 function activeMission() {
   if (!state.active) return null;
-  return (
+  const mission =
     state.active.missions ||
     state.missions.find((m) => String(missionId(m)) === String(state.active.mission_id)) ||
-    state.active
-  );
+    state.active;
+  const aircraft =
+    mission.aircraft_master ||
+    state.active.aircraft_master ||
+    state.aircraft.find((x) => String(x.aircraft_id || x.aircraft_master?.id) === String(state.active.aircraft_id))?.aircraft_master ||
+    null;
+  return {
+    ...mission,
+    aircraft_master: aircraft,
+    reward_credits: mission.reward_credits ?? mission.base_reward ?? mission.credits ?? 0,
+    reward_xp: mission.reward_xp ?? mission.base_xp ?? mission.xp ?? 0,
+    objective: mission.objective ?? mission.special_objective ?? null,
+    route: mission.route || `${mission.origin_icao || "—"} → ${mission.destination_icao || "—"}`,
+  };
 }
 function activeMissionDetails(mission) {
   return `<div class="details"><div class="detail"><div class="label">Aircraft</div><strong>${esc(aircraftName(mission.aircraft_master || mission))}</strong></div><div class="detail"><div class="label">Route</div><strong>${esc(route(mission))}</strong></div><div class="detail"><div class="label">Reward</div><strong>${num(mission.reward_credits || mission.credits)} Cr</strong></div><div class="detail"><div class="label">Experience</div><strong>+${num(mission.reward_xp || mission.xp)} XP</strong></div></div><div class="callout"><b>Objective:</b> ${esc(mission.objective || mission.mission_objective || "Complete the assigned route safely.")}</div>`;
