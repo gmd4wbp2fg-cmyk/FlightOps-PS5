@@ -851,6 +851,7 @@ async function loadActiveMissionDirect() {
     .from("active_missions")
     .select("*")
     .eq("pilot_id", uid)
+    .in("status", ["accepted", "active", "dispatched"])
     .order("accepted_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -943,6 +944,7 @@ function activeView() {
     <div class="eyebrow">Flight Operations</div><div class="callout"><b>Objective:</b> ${esc(m.objective || m.mission_objective || "Complete the assigned route safely.")}<br><b>Planning:</b> ${esc(m.planning_level || "Pilot responsibility")}<br><b>Leg:</b> ${legDisplay(m, state.active?.current_leg).current} of ${legDisplay(m, state.active?.current_leg).count}<br><b>Current leg:</b> ${esc(legDisplay(m, state.active?.current_leg).leg.origin_icao)} → ${esc(legDisplay(m, state.active?.current_leg).leg.destination_icao)} (${num(legDisplay(m, state.active?.current_leg).leg.distance_nm)} NM)<br><b>Leg purpose:</b> ${esc(legPurpose(legDisplay(m, state.active?.current_leg).leg, legDisplay(m, state.active?.current_leg).current, legDisplay(m, state.active?.current_leg).count))}<br><b>Stop plan:</b> ${esc(legDisplay(m, state.active?.current_leg).leg.stop_notes || "Complete the assigned stop objective safely.")}<br><b>Leg objective:</b> ${esc(legDisplay(m, state.active?.current_leg).leg.leg_objective || "Complete the assigned stop objective safely.")}<br><b>Status:</b> ACTIVE — this contract is locked to your pilot.</div>
     <p class="copy">Launch MSFS 2024 Free Flight and fly the mission using <b>Live Weather</b>. FlightOps does not control the simulator or collect automatic telemetry. When you land, return here and complete the debrief.</p>
     <button class="action primary" data-action="report">${legDisplay(m, state.active?.current_leg).count > 1 ? `Complete Leg ${legDisplay(m, state.active?.current_leg).current} / Debrief` : "Complete Mission / Debrief"}</button>
+    ${String(m.mission_type || "").toUpperCase() === "REPOSITION" ? `<div class="callout" style="margin-top:12px"><b>Change your plan?</b><p class="small">Cancel this reposition assignment to choose a mission departing from the aircraft’s current airport. Canceling does not move the aircraft or award rewards.</p><button class="action" data-action="cancel-reposition">Cancel Reposition &amp; Find Local Missions</button></div>` : ""}
     </div>
     ${bushMissionNotice(m)}
     ${missionPayloadCard(m)}
@@ -2091,6 +2093,7 @@ function bind() {
   $('[data-action="signup"]')?.addEventListener("click", signup);
   $('[data-action="accept"]')?.addEventListener("click", accept);
   $('[data-action="reposition"]')?.addEventListener("click", startReposition);
+  $('[data-action="cancel-reposition"]')?.addEventListener("click", cancelReposition);
   $("#app").querySelectorAll("[data-aircraft-choice]").forEach((b) => b.addEventListener("click", () => { state.selectedAircraftId = b.dataset.aircraftChoice; render(); }));
   $('[data-action="report"]')?.addEventListener("click", () => {
     state.page = "report";
@@ -2230,6 +2233,19 @@ async function startReposition() {
   } catch (e) {
     err(e, "Unable to start reposition flight.");
   }
+}
+async function cancelReposition() {
+  try {
+    if (!state.active || String(activeMission()?.mission_type || "").toUpperCase() !== "REPOSITION") throw new Error("There is no active reposition flight to cancel.");
+    if (!confirm("Cancel this reposition assignment? The aircraft will remain recorded at its current airport. No credits or XP will be awarded.")) return;
+    const result = await sb.rpc("cancel_active_reposition_operation");
+    if (result.error) throw result.error;
+    state.active = null;
+    toast("Reposition canceled. Choose a mission departing from your aircraft’s current airport.");
+    await load();
+    state.page = "missions";
+    render();
+  } catch (e) { err(e, "Unable to cancel reposition flight."); }
 }
 async function complete() {
   try {
